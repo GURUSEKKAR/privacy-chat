@@ -18,6 +18,8 @@ public interface AuthSessionRepository extends JpaRepository<AuthSession, UUID> 
   @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
   Optional<AuthSession> findByPreviousRefreshHash(String refreshHash);
 
+  List<AuthSession> findByUserIdAndRevokedAtIsNull(UUID userId);
+
   List<AuthSession> findByDeviceIdAndRevokedAtIsNull(UUID deviceId);
 
   @Modifying

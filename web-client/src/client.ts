@@ -160,6 +160,9 @@ export class ChatClient {
         reject(new Error("Chat authorization failed. Sign in again."));
       };
       socket.onWebSocketClose = () => {
+        this.messages.clear();
+        this.sessionId = null;
+        this.onChange();
         clearTimeout(timer);
         reject(new Error("Chat connection closed. Use Reconnect."));
         for (const p of this.sends.values()) {

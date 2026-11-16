@@ -1,6 +1,6 @@
 # Implementation TODO
 
-Updated 16 November 2026. MVP implementation and local acceptance are complete. Fifty-two Java tests and four web tests pass with no failures or skips, including real GUI, native Keychain and TLS deployment tests. Free-tier Render/Vercel deployment configuration is prepared; see [deployment instructions](README.md#free-render--vercel-deployment). The original task IDs below are updated against the evidence in [acceptance.md](docs/verification/acceptance.md).
+Updated 17 November 2026. MVP implementation and local acceptance are complete. Sixty-one Java tests and four web tests pass with no failures or skips, including real GUI, native Keychain and TLS deployment tests. Free-tier Render/Vercel deployment configuration is prepared; see [deployment instructions](README.md#free-render--vercel-deployment). The original task IDs below are updated against the evidence in [acceptance.md](docs/verification/acceptance.md).
 
 ## Completed implementation
 
@@ -218,3 +218,14 @@ Checked items have implementation and local verification evidence. Human approva
 - [x]  At 60-minute reset B/C are revoked, A remains; room is locked until A commits new MLS state. B/C cannot receive newer messages.
 - [x]  Owner A re-invites B to next cycle; B gets new keys and no prior-cycle history.
 - [x]  Inspect a database export and logs: no plaintext messages, no private device keys, and documented metadata retention.
+
+## Authenticator and group navigation update — 17 November 2026
+
+- [x] Google Authenticator-compatible TOTP QR/manual-key setup after registration; code confirmation before account chat access.
+- [x] Require a second factor at every new sign-in, including known devices; permit one-time hashed recovery codes.
+- [x] Encrypt authenticator seeds with an account-bound, deployment-managed AES-GCM key; reject code replay and limit verification attempts.
+- [x] Show the prior active session and require explicit replacement; atomically revoke old tokens and close old sockets/room sessions.
+- [x] Add visible Join group alongside Create group, invitation-code matching and guidance for owner acceptance; show account/device controls outside the group view.
+- [x] Add desktop authenticator verification, recovery-code display and explicit session replacement.
+- [ ] Synchronize the Render Blueprint or configure its stable MFA encryption key, deploy the updated backend/frontend, and exercise phone QR scanning on the public deployment.
+- [ ] Independent review of the expanded authenticator/session implementation; no production security approval is implied.

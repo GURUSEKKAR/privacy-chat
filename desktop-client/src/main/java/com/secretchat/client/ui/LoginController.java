@@ -78,6 +78,8 @@ public class LoginController {
     password.clear();
     if ("APPROVED".equals(t.deviceStatus())) {
       ctx.showRooms();
+    } else if (t.deviceStatus().startsWith("MFA_") || "SESSION_CONFLICT".equals(t.deviceStatus())) {
+      mfa(t.deviceStatus());
     } else {
       status.setText(
           "This device is awaiting approval. On an approved device, approve fingerprint:\n"
@@ -85,10 +87,112 @@ public class LoginController {
     }
   }
 
+  private void mfa(String state) {
+    if ("MFA_SETUP_APPROVAL".equals(state)) {
+      status.setText(
+          "Set up Google Authenticator by signing in on the original approved browser or app first. Then sign in here with its code.");
+      return;
+    }
+    setBusy(true);
+    if ("MFA_SETUP".equals(state)) {
+      ctx.async(
+          () -> ctx.client().api().mfaSetup(),
+          setup -> {
+            setBusy(false);
+            promptCode(
+                "In Google Authenticator choose + then Enter a setup key. Account: "
+                    + username.getText()
+                    + ". Type: Time based. Setup key: "
+                    + setup.secret());
+          },
+          this::failed);
+    } else if ("SESSION_CONFLICT".equals(state)) {
+      ctx.async(() -> ctx.client().api().mfaState(), this::afterMfa, this::failed);
+    } else {
+      setBusy(false);
+      promptCode("Enter the current 6-digit Google Authenticator code or an unused recovery code.");
+    }
+  }
+
+  private void promptCode(String message) {
+    var dialog = new javafx.scene.control.TextInputDialog();
+    dialog.setTitle("Authenticator verification");
+    dialog.setHeaderText("Verify your sign-in");
+    dialog.setContentText(message);
+    dialog
+        .showAndWait()
+        .ifPresent(code -> {
+          setBusy(true);
+          ctx.async(
+              () -> ctx.client().api().mfaVerify(code.trim()),
+              this::afterMfa,
+              failure -> {
+                failed(failure);
+                status.setText(
+                    failure.getMessage()
+                        + " Click Check approval to retry authenticator verification.");
+              });
+        });
+  }
+
+  private void afterMfa(com.secretchat.client.api.ApiClient.MfaState result) {
+    setBusy(false);
+    if (!result.recoveryCodes().isEmpty()) {
+      var area = new javafx.scene.control.TextArea(String.join("\n", result.recoveryCodes()));
+      area.setEditable(false);
+      var saved =
+          new javafx.scene.control.CheckBox("I saved these recovery codes somewhere private.");
+      var dialog = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+      dialog.setTitle("Save recovery codes");
+      dialog.setHeaderText(
+          "These codes are shown only once. Each code can replace one authenticator code.");
+      dialog.getDialogPane().setContent(new javafx.scene.layout.VBox(10, area, saved));
+      dialog
+          .getDialogPane()
+          .lookupButton(javafx.scene.control.ButtonType.OK)
+          .disableProperty()
+          .bind(saved.selectedProperty().not());
+      dialog.showAndWait();
+    }
+    if ("SESSION_CONFLICT".equals(result.status())) {
+      String previous =
+          result.previousSessions().stream()
+              .map(s -> s.deviceName() + " — signed in " + s.signedInAt())
+              .collect(java.util.stream.Collectors.joining("\n"));
+      var dialog =
+          new javafx.scene.control.Alert(
+              javafx.scene.control.Alert.AlertType.CONFIRMATION,
+              previous + "\nRevoke the previous session and sign in on this device?",
+              javafx.scene.control.ButtonType.YES,
+              javafx.scene.control.ButtonType.NO);
+      dialog.setHeaderText("Another session is active");
+      if (dialog.showAndWait().orElse(javafx.scene.control.ButtonType.NO)
+          == javafx.scene.control.ButtonType.YES) {
+        setBusy(true);
+        ctx.async(() -> ctx.client().api().replaceSession(), this::afterMfa, this::failed);
+      } else
+        status.setText("Previous session kept. Sign out here or click Check approval to continue.");
+    } else {
+      setBusy(true);
+      ctx.async(
+          () -> {
+            ctx.client().refreshApproval();
+            return ctx.client().tokens();
+          },
+          this::after,
+          this::failed);
+    }
+  }
+
   @FXML
   void onCheckApproval() {
     if (ctx.client().tokens() == null) {
       status.setText("Create an account or sign in before checking device approval.");
+      return;
+    }
+    if (ctx.client().tokens().deviceStatus().startsWith("MFA_")
+        || "SESSION_CONFLICT".equals(ctx.client().tokens().deviceStatus())) {
+      mfa(ctx.client().tokens().deviceStatus());
       return;
     }
     setBusy(true);

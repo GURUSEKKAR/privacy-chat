@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
 import { createInterface } from "node:readline";
@@ -31,6 +32,42 @@ const operations = {
       username: t.username,
       deviceId: t.deviceId,
       deviceFingerprint: t.deviceFingerprint,
+      deviceStatus: t.deviceStatus,
+    };
+  },
+  async mfaEnrollForCheck() {
+    const { secret } = await client.api.call("/api/v1/auth/mfa/setup", "POST");
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    let value = 0,
+      bits = 0;
+    const bytes = [];
+    for (const c of secret) {
+      value = (value << 5) | alphabet.indexOf(c);
+      bits += 5;
+      if (bits >= 8) {
+        bits -= 8;
+        bytes.push((value >>> bits) & 255);
+      }
+    }
+    const counter = Buffer.alloc(8);
+    counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30000)));
+    const hash = createHmac("sha1", Buffer.from(bytes))
+      .update(counter)
+      .digest();
+    const offset = hash[hash.length - 1] & 15;
+    const code = String(
+      (hash.readUInt32BE(offset) & 0x7fffffff) % 1000000,
+    ).padStart(6, "0");
+    const result = await client.api.call("/api/v1/auth/mfa/verify", "POST", {
+      code,
+    });
+    if (result.status !== "APPROVED")
+      throw new Error("Fresh test account should be active after enrollment");
+    await client.api.refresh();
+    await client.online();
+    return {
+      status: result.status,
+      recoveryCount: result.recoveryCodes.length,
     };
   },
   async create(p) {

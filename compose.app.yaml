@@ -4,6 +4,7 @@ services:
   backend:
     build: .
     environment:
+      SECRETCHAT_MFA_ENCRYPTION_KEY: ${SECRETCHAT_MFA_ENCRYPTION_KEY:?set SECRETCHAT_MFA_ENCRYPTION_KEY}
       SERVER_ADDRESS: 0.0.0.0
       SECRETCHAT_DB_URL: jdbc:postgresql://postgres:5432/secretchat
       SECRETCHAT_DB_USER: ${SECRETCHAT_DB_USER:-secretchat}

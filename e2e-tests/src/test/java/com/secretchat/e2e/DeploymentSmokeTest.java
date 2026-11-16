@@ -64,6 +64,17 @@ class DeploymentSmokeTest {
       String suffix = UUID.randomUUID().toString().substring(0, 8);
       a.register("tlsa" + suffix, "deployment-test-password".toCharArray(), "TLS A");
       b.register("tlsb" + suffix, "deployment-test-password".toCharArray(), "TLS B");
+      for (var client : java.util.List.of(a, b)) {
+        if ("MFA_SETUP".equals(client.tokens().deviceStatus())) {
+          var setup = client.api().mfaSetup();
+          var verifier = new com.secretchat.auth.Totp("unused-test-key-at-least-32-characters");
+          client
+              .api()
+              .mfaVerify(
+                  verifier.code(setup.secret(), java.time.Instant.now().getEpochSecond() / 30));
+          client.refreshApproval();
+        }
+      }
       var room =
           a.createRoom(new CreateRoomRequest(null, null, 60, 600, PrivacyMode.TEMPORARY_CATCH_UP));
       var invitation = a.invite(room.id(), b.username());

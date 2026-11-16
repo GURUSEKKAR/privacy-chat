@@ -598,3 +598,20 @@ dialog .status {
     max-width: 95%;
   }
 }
+
+#auth-qr {
+  display: block;
+  max-width: 100%;
+  margin: 1rem auto;
+}
+#codes-saved {
+  width: auto;
+  display: inline;
+}
+.pending-wrap pre {
+  white-space: pre-wrap;
+}
+#join-room {
+  width: 100%;
+  margin-top: 0.6rem;
+}

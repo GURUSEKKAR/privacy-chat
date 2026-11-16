@@ -27,11 +27,15 @@ async function call(command, data = {}) {
 }
 try {
   const user = "webcheck-" + crypto.randomUUID().slice(0, 16);
-  await call("auth", {
+  const auth = await call("auth", {
     origin: "http://localhost:5173",
     user,
     password: crypto.randomUUID(),
   });
+  if (auth.deviceStatus === "MFA_SETUP") {
+    const verified = await call("mfaEnrollForCheck");
+    assert.equal(verified.recoveryCount, 10);
+  }
   const room = await call("create");
   await call("enter", { room: room.id });
   await call("send", { text: "Local proxy encryption verification" });

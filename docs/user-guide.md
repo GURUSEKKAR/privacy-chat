@@ -1,6 +1,8 @@
 # Desktop user guide
 
-Create an account with a unique username and a password of at least 12 characters. The first device becomes approved. Reuse the same local data folder when signing in later to retain its identity. An additional computer remains pending until an approved device confirms its displayed fingerprint. The device list supports approval and revocation of another device.
+Create an account with a unique username and a password of at least 12 characters. Complete Google Authenticator setup before entering chat: scan the website QR code, or enter the desktop setup key manually as a time-based account. Confirm its six-digit code and save your one-time recovery codes. Every new sign-in needs a password and authenticator or recovery code. If another session exists, review its device name/time and explicitly revoke it before activating the new session. Only one session can access the account at once. Existing accounts enroll from their original approved device first. See the [authenticator setup and deployment guide](../README.md#google-authenticator-and-one-active-session).
+
+Reuse the same website domain/browser profile or desktop data folder to retain the device identity. A new browser can authenticate using its authenticator code, but it does not inherit another device's MLS room keys or membership. Account/session and device controls are available in the website header. **Join group** is next to **Create group**; enter an invitation's code/password, or accept it from Invitations. Joining still requires an owner invitation and MLS Add.
 
 Create a room with optional code/password, message lifetime and member reset interval. Select it, type an account username and choose Invite. The recipient refreshes invitations and accepts. The owner selects Add accepted members to issue MLS Welcome messages. A room password adds an entry check; it does not decrypt messages or grant membership.
 

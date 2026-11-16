@@ -1,6 +1,7 @@
 import type { Tokens } from "./types";
 export class Api {
   tokens: Tokens | null = null;
+  onUnauthorized: () => void = () => {};
   private refreshing: Promise<Tokens> | null = null;
   constructor(readonly origin: string = location.origin) {}
   async call<T>(
@@ -26,6 +27,8 @@ export class Api {
       signal: AbortSignal.timeout(20_000),
     });
     if (!response.ok) {
+      if (response.status === 401 && (auth || path === "/api/v1/auth/refresh"))
+        this.onUnauthorized();
       const error = await response
         .json()
         .catch(() => ({ message: "Server request failed." }));

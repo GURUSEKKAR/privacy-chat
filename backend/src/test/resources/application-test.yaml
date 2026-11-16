@@ -1,4 +1,6 @@
 secretchat:
+  mfa:
+    required: false
   worker:
     # Workers are invoked explicitly by tests (runOnce) for determinism.
     initial-delay-ms: 3600000

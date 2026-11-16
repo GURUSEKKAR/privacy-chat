@@ -1,7 +1,7 @@
 {
-  "verified_at_utc": "2026-11-16T09:37:54.598579+00:00",
+  "verified_at_utc": "2026-11-16T20:15:17.736502+00:00",
   "totals": {
-    "tests": 52,
+    "tests": 61,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -10,6 +10,20 @@
     {
       "suite": "com.secretchat.auth.AuthIntegrationTest",
       "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.secretchat.auth.MfaIntegrationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.secretchat.auth.TotpTest",
+      "tests": 2,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -114,12 +128,12 @@
     }
   ],
   "official_passive_client_cases": 21,
-  "build_command": "mvn -o verify spotless:check -Dsecretchat.gui=true -Dsecretchat.keychain.integration=true -Dsecretchat.deployment=true -Dsecretchat.web=true",
+  "build_command": "mvn verify spotless:check -Dsecretchat.gui=true -Dsecretchat.web=true -Dsecretchat.keychain.integration=true -Dsecretchat.deployment=true",
   "release_gates": [
     "Independent security review and closure of findings",
     "Organizational threat model sign-off"
   ],
-  "verification_inputs_sha256": "a0641f9f8f7ef0eac37fd2b268a007d0133fc300118f727e7e2b8bc729ac5cac",
+  "verification_inputs_sha256": "2463581faa43f08efe75fd9015131adc9f9995433604cb67777badcdf17eb28d",
   "maven_launcher_runtime_check": {
     "passed": true,
     "working_directory_contains_spaces": true,
@@ -135,5 +149,15 @@
     "approval disabled before login",
     "SDK approval without login fails with actionable message",
     "successful GUI registration and encrypted conversation after validation failures"
+  ],
+  "authenticator_regressions": [
+    "RFC 6238 SHA-1 vectors",
+    "account-bound seed encryption",
+    "code replay and recovery reuse rejected",
+    "password-only chat and WebSocket access forbidden",
+    "pending-device enrollment rejected for existing accounts",
+    "explicit single-session replacement revokes old access/refresh tokens",
+    "concurrent replacements authorize exactly one login",
+    "incomplete login expiry"
   ]
 }

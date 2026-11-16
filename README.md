@@ -103,7 +103,7 @@ HTTP development binds to loopback. The TLS container explicitly binds its conta
 
 ## Website
 
-The browser client supports registration, sign-in, device approval, invitations, rooms and MLS-encrypted temporary chat. It uses the same backend and interoperates with desktop clients. Tokens and chat state stay in memory; browser device keys are password-encrypted in local storage. Refreshing the page loses room keys, so the owner must reset the room and invite members again. A browser is a distinct device and needs approval if the account was created elsewhere.
+The browser client supports registration, sign-in, device approval, invitations, rooms and MLS-encrypted temporary chat. It uses the same backend and interoperates with desktop clients. Tokens and chat state stay in memory; browser device keys are password-encrypted in local storage. Refreshing the page loses room keys, so the owner must reset the room and invite members again. A browser is a distinct device; new sign-ins require an authenticator code. Existing accounts without MFA enroll from an original approved device first.
 
 After starting the secure Docker stack, run:
 
@@ -131,3 +131,19 @@ The production web frontend is a static Vite site on Vercel; the Java API and We
 The HTTP port is selected by Render's `PORT` environment variable, not a port number embedded in frontend code. `render.yaml` sets the default to `10000`; Render routes both HTTPS and WSS to that same port. For local Vite development, `SECRETCHAT_DEV_BACKEND` optionally changes the proxy target.
 
 **Free-tier data limitation:** Render's free PostgreSQL is temporary: it expires 30 days after creation, has no backups, and the free web service can sleep after 15 minutes without inbound traffic. Treat this as a demo, export any data you need before database expiry, and do not use these free resources for accounts or data you need to preserve. Render describes these limitations in its [free service documentation](https://render.com/docs/free). Vercel Functions cannot host this app's long-lived WebSocket server; the browser connects directly to Render instead ([Vercel WebSocket limits](https://vercel.com/docs/limits#websockets)).
+
+## Google Authenticator and one active session
+
+New accounts enter an authenticator setup screen immediately after username/password registration. Scan the locally generated QR code with Google Authenticator (or enter the setup key manually), then confirm a six-digit code. Save the ten one-time recovery codes shown after confirmation; they are never shown again. No Google API, paid service or external QR service is involved.
+
+Each new sign-in requires a password, device-key proof and an authenticator code (or unused recovery code). A verified sign-in displays the existing active session's device name and sign-in time. **Revoke previous session & sign in here** explicitly replaces it; cancel keeps the previous session active. Database row locking serializes activation. Replacement revokes the old access and refresh tokens, closes its WebSocket and room sessions, and authorizes only the new session. Verification expires after ten minutes; confirmation of session replacement requires verification within five minutes. Already used TOTP time steps and recovery codes cannot be replayed. Five verification attempts per account are allowed per five minutes.
+
+An existing account without an authenticator must first sign in on its original approved browser or desktop app to enroll. A password-only login from a new pending device cannot claim the authenticator. There is no automatic bypass if all approved devices are lost; use a controlled account recovery process rather than approving arbitrary devices in the database. Once enrolled, an authenticator/recovery code approves a new browser without requiring the old browser.
+
+**Deployment requirement:** set `SECRETCHAT_MFA_ENCRYPTION_KEY` to a cryptographically random string with at least 32 characters on the backend. Keep it stable across deployments and store a secure backup; changing or losing it makes existing authenticator seeds unreadable. The Render Blueprint generates this secret for new/synchronized resources. For an existing Render service, synchronize the updated Blueprint or add the variable manually before deploying. The local TLS preparation script adds a generated key to the ignored stack environment. Never put this key in Vercel, Git, screenshots or frontend variables. Secrets use AES-GCM with per-account associated data; recovery codes are stored only as hashes.
+
+The default runtime requires MFA. The `test` profile explicitly disables mandatory enrollment for older cryptography/lifecycle fixtures; dedicated MFA tests enable it and exercise the complete flow. An enrolled account always requires its second factor even if the mandatory-enrollment setting is disabled. Desktop sign-in supports the same verifier and session-replacement flow, using manual authenticator-key setup; the browser provides the QR code.
+
+The website header provides **Account & session** and **Devices**. The sidebar provides **Create group** and **Join group**. To join, ask the owner to invite your username, enter the invitation's group code/password or accept it under Invitations, then wait for the owner to add your device to the encrypted group. Group codes are not public access credentials. The owner must verify device fingerprints during MLS membership changes.
+
+Authenticator approval does not transfer old MLS room keys or room device membership. Chat keys remain in memory. After losing group state, owners reset/reinvite from their room device; a new member device needs a fresh invitation. Keep using one stable website domain to preserve the password-encrypted device identity.

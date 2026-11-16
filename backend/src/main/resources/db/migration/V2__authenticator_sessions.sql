@@ -1,0 +1,6 @@
+ALTER TABLE users ADD COLUMN totp_secret TEXT;
+ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN totp_last_step BIGINT NOT NULL DEFAULT -1;
+ALTER TABLE users ADD COLUMN recovery_hashes TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN active_session_id UUID;
+ALTER TABLE auth_sessions ADD COLUMN mfa_verified_at TIMESTAMPTZ;

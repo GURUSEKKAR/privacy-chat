@@ -43,6 +43,21 @@ public class AuthSession {
   @Column(name = "revoked_at")
   private Instant revokedAt;
 
+  @Column(name = "mfa_verified_at")
+  private Instant mfaVerifiedAt;
+
+  public Instant getMfaVerifiedAt() {
+    return mfaVerifiedAt;
+  }
+
+  public void verifyMfa(Instant now) {
+    mfaVerifiedAt = now;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+
   protected AuthSession() {}
 
   public AuthSession(

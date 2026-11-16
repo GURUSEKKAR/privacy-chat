@@ -21,6 +21,7 @@ services:
       SECRETCHAT_DB_USER: secretchat
       SECRETCHAT_DB_PASSWORD: ${SECRETCHAT_DB_PASSWORD}
       SECRETCHAT_TLS_PASSWORD: ${SECRETCHAT_TLS_PASSWORD}
+      SECRETCHAT_MFA_ENCRYPTION_KEY: ${SECRETCHAT_MFA_ENCRYPTION_KEY:?run scripts/prepare-local-tls.sh}
       SECRETCHAT_METRICS_TOKEN: ${SECRETCHAT_METRICS_TOKEN}
     volumes:
       - ./.local/tls/server.p12:/run/tls/server.p12:ro

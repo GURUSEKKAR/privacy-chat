@@ -3,6 +3,10 @@ set -eu
 umask 077
 mkdir -p .local/tls
 if [ -e .local/tls/stack.env ]; then
+  if ! grep -q '^SECRETCHAT_MFA_ENCRYPTION_KEY=' .local/tls/stack.env 2>/dev/null; then
+    # Upgrade existing local deployments without changing their database or TLS secrets.
+    printf 'SECRETCHAT_MFA_ENCRYPTION_KEY=%s\n' "$(openssl rand -hex 32)" >> .local/tls/stack.env
+  fi
   echo 'Local TLS configuration already exists.'
   exit 0
 fi
@@ -22,6 +26,7 @@ chmod 644 .local/tls/server.p12 .local/tls/localhost.crt
 {
   printf 'SECRETCHAT_TLS_PASSWORD=%s\n' "$SECRETCHAT_TLS_PASSWORD"
   printf 'SECRETCHAT_DB_PASSWORD=%s\n' "$SECRETCHAT_DB_PASSWORD"
+  printf 'SECRETCHAT_MFA_ENCRYPTION_KEY=%s\n' "$(openssl rand -hex 32)"
   printf 'SECRETCHAT_METRICS_TOKEN=%s\n' "$SECRETCHAT_METRICS_TOKEN"
 } > .local/tls/stack.env
 echo 'Prepared localhost TLS certificate and private stack environment in .local/tls.'

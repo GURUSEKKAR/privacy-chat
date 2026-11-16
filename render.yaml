@@ -18,6 +18,8 @@ services:
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: render
+      - key: SECRETCHAT_MFA_ENCRYPTION_KEY
+        generateValue: true
       - key: PORT
         value: "10000"
       - key: SECRETCHAT_WEB_ORIGINS

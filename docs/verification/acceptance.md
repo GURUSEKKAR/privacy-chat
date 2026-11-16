@@ -2,7 +2,7 @@
 
 Verified 16 November 2026. The MVP implementation passes local acceptance; independent production security approval is still outstanding.
 
-The final verification run executed **52 Java tests, with zero failures, errors or skips**. The flags enable actual JavaFX screens, native macOS Keychain and the separately packaged TLS Docker application.
+The final verification run executed **61 Java tests, with zero failures, errors or skips**. The flags enable actual JavaFX screens, native macOS Keychain and the separately packaged TLS Docker application.
 
 ```sh
 mvn -o verify spotless:check -Dsecretchat.gui=true -Dsecretchat.keychain.integration=true -Dsecretchat.deployment=true -Dsecretchat.web=true
@@ -11,6 +11,8 @@ mvn -o verify spotless:check -Dsecretchat.gui=true -Dsecretchat.keychain.integra
 | Suite | Tests |
 | --- | ---: |
 | AuthIntegrationTest | 8 |
+| MfaIntegrationTest | 7 |
+| TotpTest | 2 |
 | BrowserAccessTest | 3 |
 | BrowserInteropTest | 2 |
 | BoundedAuthenticationStateTest | 2 |
@@ -65,3 +67,7 @@ The website supports encrypted browser/desktop conversations in either owner dir
 Four Node tests check password lengths at 11 and 12 characters, password-encrypted vault preservation on failed unlock, MLS sender authentication, tampering, replay and reset isolation, plus static import resolution in the production JavaScript bundle. A separate running deployment check through the loopback preview verifies API proxying, server-certificate validation, browser ticket transport, encrypted send and view-once re-entry. Browser UI interaction could not be visually verified because the browser access host is unavailable; SDK and HTTP checks do not establish visual acceptance.
 
 The development website is served at http://localhost:5173. The packaged backend serves its built assets at https://localhost:18443/. These are local endpoints, not a public Internet deployment. The browser MLS implementation expands the pending independent-review scope.
+
+## Authenticator acceptance — 17 November 2026
+
+The full local suite now passes 61 Java tests and four Node tests, without failures, errors or skips. The added cases cover RFC 6238 known answers, authenticated encryption of seeds, replay refusal, one-use recovery codes, mandatory MFA on known/new devices, forbidden password-only chat/ticket access, setup restrictions for existing accounts, expired incomplete sign-ins, explicit replacement and concurrent activation. A running browser SDK enrollment confirms a generated TOTP before publishing MLS keys and exchanging an encrypted message through the real TLS backend. Native desktop packaging and runtime verification also pass. Actual phone-camera QR scanning and browser UI interaction remain manual acceptance work; backend/SDK tests do not establish those visual behaviors.

@@ -111,6 +111,37 @@ public class ApiClient {
     }
   }
 
+  public record MfaSetup(String secret, String uri) {}
+
+  public record ActiveSession(UUID id, String deviceName, Instant signedInAt, Instant expiresAt) {}
+
+  public record MfaState(
+      String status, List<ActiveSession> previousSessions, List<String> recoveryCodes) {}
+
+  public MfaSetup mfaSetup() {
+    return send("POST", "/api/v1/auth/mfa/setup", null, MfaSetup.class, true);
+  }
+
+  public MfaState mfaState() {
+    return send("GET", "/api/v1/auth/mfa", null, MfaState.class, true);
+  }
+
+  public MfaState mfaVerify(String code) {
+    MfaState state =
+        send(
+            "POST",
+            "/api/v1/auth/mfa/verify",
+            java.util.Map.of("code", code),
+            MfaState.class,
+            true);
+    refresh();
+    return state;
+  }
+
+  public MfaState replaceSession() {
+    return send("POST", "/api/v1/auth/mfa/replace-session", null, MfaState.class, true);
+  }
+
   // ---- devices ----
 
   public List<DeviceView> devices() {

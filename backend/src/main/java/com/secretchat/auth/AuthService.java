@@ -43,6 +43,7 @@ public class AuthService {
   private final Clock clock;
   private final ApplicationEventPublisher events;
   private final String dummyHash;
+  private final MfaService mfa;
 
   public AuthService(
       UserRepository users,
@@ -55,7 +56,9 @@ public class AuthService {
       @Qualifier("registrationLimiter") RateLimiter registrations,
       AppProperties props,
       Clock clock,
-      ApplicationEventPublisher events) {
+      ApplicationEventPublisher events,
+      MfaService mfa) {
+    this.mfa = mfa;
     this.users = users;
     this.devices = devices;
     this.sessions = sessions;
@@ -222,7 +225,7 @@ public class AuthService {
         user.getId(),
         user.getUsername(),
         device.getId(),
-        device.getStatus().name(),
+        mfa.status(user, device, s),
         device.getFingerprint());
   }
 
@@ -258,6 +261,12 @@ public class AuthService {
             .findById(s.getDeviceId())
             .filter(d -> d.getStatus() != Device.Status.REVOKED)
             .orElseThrow(ApiException::unauthorized);
+    if (mfa.gated(user)
+        && !"APPROVED".equals(mfa.status(user, device, s))
+        && !now.isBefore(s.getCreatedAt().plusSeconds(600))) {
+      s.revoke(now);
+      throw ApiException.unauthorized();
+    }
     String access = Hashing.newToken();
     String refresh = Hashing.newToken();
     Instant accessExp = now.plus(props.accessTokenTtl());
@@ -273,7 +282,7 @@ public class AuthService {
         user.getId(),
         user.getUsername(),
         device.getId(),
-        device.getStatus().name(),
+        mfa.status(user, device, s),
         device.getFingerprint());
   }
 
@@ -317,12 +326,15 @@ public class AuthService {
     if (user.isEmpty() || device.isEmpty()) {
       return Optional.empty();
     }
+    if (mfa.gated(user.get())
+        && !"APPROVED".equals(mfa.status(user.get(), device.get(), s))
+        && !clock.instant().isBefore(s.getCreatedAt().plusSeconds(600))) return Optional.empty();
     return Optional.of(
         new AuthPrincipal(
             user.get().getId(),
             user.get().getUsername(),
             device.get().getId(),
-            device.get().isApproved(),
+            device.get().isApproved() && "APPROVED".equals(mfa.status(user.get(), device.get(), s)),
             s.getId()));
   }
 }

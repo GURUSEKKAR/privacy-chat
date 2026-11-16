@@ -1,4 +1,5 @@
 import "./style.css";
+import QRCode from "qrcode";
 import { ChatClient, type Displayed } from "./client";
 import { validateAccount } from "./bytes";
 import type { Room, Invite, Member, Device } from "./types";
@@ -7,6 +8,19 @@ const apiOrigin = (
   import.meta.env.VITE_API_ORIGIN?.trim() || location.origin
 ).replace(/\/+$/, "");
 const client = new ChatClient(apiOrigin);
+client.api.onUnauthorized = () => {
+  client.messages.clear();
+  client.mls?.clear();
+  client.mls = null;
+  client.api.tokens = null;
+  void client.socket?.deactivate();
+  client.sessionId = null;
+  selected = null;
+  login();
+  status(
+    "This session ended or was replaced by another sign-in. Sign in again to continue.",
+  );
+};
 let mode: "register" | "login" = "register";
 let selected: Room | null = null;
 let allRooms: Room[] = [];
@@ -45,7 +59,7 @@ function bind(id: string, work: () => Promise<void>) {
   if (b) b.onclick = () => void action(b, work);
 }
 function login() {
-  app.innerHTML = `<main class="landing"><header class="top">${brand}<span class="secure-pill">Invitation only. Encrypted on your device.</span></header><div class="auth-layout"><section class="intro"><div class="tag">A little less permanent</div><h1>Good conversations.<br>Without the history.</h1><p>A private place for your people. Invite who belongs, choose how long messages stay, and let the rest disappear.</p><div class="features"><span>Messages encrypted before they leave your browser</span><span>Device approval keeps unfamiliar devices out</span><span>Temporary history, with a countdown you control</span></div><small>Release candidate · Independent security review pending</small></section><section class="auth-card"><div class="tabs"><button id="register-tab" type="button">Create account</button><button id="login-tab" type="button">Sign in</button></div><h2 id="form-title">Make yourself at home.</h2><p class="muted" id="form-description">Your browser becomes your first trusted device.</p><form id="auth-form" novalidate><label>Username<input id="username" name="username" autocomplete="username" placeholder="e.g. guru.r.c" maxlength="32" required></label><label>Password<div class="password-wrap"><input id="password" type="password" name="password" autocomplete="new-password" maxlength="128" required><button id="show-password" type="button" aria-label="Show password">Show</button></div></label><p id="password-count" class="hint" aria-live="polite">0 characters · Use 12–128 for a new account</p><label>Device name<input id="device" name="device" value="My browser" maxlength="64" required></label><p id="auth-status" class="status" role="alert"></p><button id="authenticate" class="primary form-action" type="submit">Create account</button></form><div class="notice">This browser stores a password-encrypted device key. Your password and chat history are never saved by the website.</div></section></div><footer class="footer">Messages stay in memory and disappear at expiry or when you leave. People can still copy or screenshot what they see. Restarting the browser loses room keys; the owner must reset and invite members again.</footer></main>`;
+  app.innerHTML = `<main class="landing"><header class="top">${brand}<span class="secure-pill">Invitation only. Encrypted on your device.</span></header><div class="auth-layout"><section class="intro"><div class="tag">A little less permanent</div><h1>Good conversations.<br>Without the history.</h1><p>A private place for your people. Invite who belongs, choose how long messages stay, and let the rest disappear.</p><div class="features"><span>Messages encrypted before they leave your browser</span><span>Authenticator verification protects every sign-in</span><span>Temporary history, with a countdown you control</span></div><small>Release candidate · Independent security review pending</small></section><section class="auth-card"><div class="tabs"><button id="register-tab" type="button">Create account</button><button id="login-tab" type="button">Sign in</button></div><h2 id="form-title">Make yourself at home.</h2><p class="muted" id="form-description">Create your account, then scan a QR code with Google Authenticator.</p><form id="auth-form" novalidate><label>Username<input id="username" name="username" autocomplete="username" placeholder="e.g. guru.r.c" maxlength="32" required></label><label>Password<div class="password-wrap"><input id="password" type="password" name="password" autocomplete="new-password" maxlength="128" required><button id="show-password" type="button" aria-label="Show password">Show</button></div></label><p id="password-count" class="hint" aria-live="polite">0 characters · Use 12–128 for a new account</p><label>Device name<input id="device" name="device" value="My browser" maxlength="64" required></label><p id="auth-status" class="status" role="alert"></p><button id="authenticate" class="primary form-action" type="submit">Create account</button></form><div class="notice">This browser stores a password-encrypted device key. Your password and chat history are never saved by the website.</div></section></div><footer class="footer">Messages stay in memory and disappear at expiry or when you leave. People can still copy or screenshot what they see. Restarting the browser loses room keys; the owner must reset and invite members again.</footer></main>`;
   const password = document.querySelector<HTMLInputElement>("#password")!,
     user = document.querySelector<HTMLInputElement>("#username")!,
     device = document.querySelector<HTMLInputElement>("#device")!;
@@ -69,8 +83,8 @@ function login() {
       mode === "register" ? "Make yourself at home." : "Welcome back.";
     document.querySelector("#form-description")!.textContent =
       mode === "register"
-        ? "Your browser becomes your first trusted device."
-        : "A new browser needs approval from a trusted device.";
+        ? "Create your account, then scan a QR code with Google Authenticator."
+        : "Verify your authenticator code after entering your password.";
     document.querySelector("#authenticate")!.textContent =
       mode === "register" ? "Create account" : "Sign in";
     password.autocomplete =
@@ -125,6 +139,13 @@ function login() {
 }
 async function signedIn() {
   const t = client.api.tokens!;
+  if (
+    t.deviceStatus.startsWith("MFA_") ||
+    t.deviceStatus === "SESSION_CONFLICT"
+  ) {
+    await authenticator();
+    return;
+  }
   if (t.deviceStatus !== "APPROVED") {
     app.innerHTML = `<main class="landing"><header>${brand}</header><section class="pending-wrap"><div class="tag">One more step</div><h2>Approve this browser.</h2><p class="muted">You signed in as <strong>${h(t.username)}</strong>. On an already approved device, open Devices and approve the fingerprint below. Compare it through a separate trusted channel.</p><p class="fingerprint">${h(t.deviceFingerprint)}</p><p id="auth-status" class="status" role="alert"></p><div class="inline-actions"><button id="approval" class="primary">Check approval</button><button id="logout">Sign out</button></div></section></main>`;
     bind("approval", async () => {
@@ -138,10 +159,12 @@ async function signedIn() {
     });
     return;
   }
-  app.innerHTML = `<div class="shell"><header class="app-header">${brand}<div class="header-actions"><span><i class="online"></i>${h(t.username)}</span><button id="reconnect">Reconnect</button><button id="devices">Devices</button><button id="logout">Sign out</button></div></header><div><div id="app-status" class="global-status" role="alert"></div><div class="workspace"><aside class="sidebar"><div class="section-head"><h3>Your rooms</h3><button id="refresh" aria-label="Refresh rooms">↻</button></div><div id="rooms" class="room-list"></div><button id="new-room" class="primary">+ Create room</button><h3>Invitations</h3><div id="invitations"><small>No pending invitations.</small></div></aside><section id="chat" class="chat"></section><aside id="details" class="details"></aside></div></div></div>`;
+  app.innerHTML = `<div class="shell"><header class="app-header">${brand}<div class="header-actions"><span><i class="online"></i>${h(t.username)}</span><button id="reconnect">Reconnect</button><button id="account">Account &amp; session</button><button id="devices">Devices</button><button id="logout">Sign out</button></div></header><div><div id="app-status" class="global-status" role="alert"></div><div class="workspace"><aside class="sidebar"><div class="section-head"><h3>Your rooms</h3><button id="refresh" aria-label="Refresh rooms">↻</button></div><div id="rooms" class="room-list"></div><button id="new-room" class="primary">+ Create group</button><button id="join-room">Join group</button><h3>Invitations</h3><div id="invitations"><small>No pending invitations.</small></div></aside><section id="chat" class="chat"></section><aside id="details" class="details"></aside></div></div></div>`;
   bind("refresh", refreshLists);
   bind("new-room", async () => newRoom());
   bind("devices", devices);
+  bind("account", account);
+  bind("join-room", joinGroup);
   bind("reconnect", async () => {
     await client.api.refresh();
     await client.connect();
@@ -187,7 +210,7 @@ async function refreshLists() {
             await client.accept(i, String(data.get("password") || "") || null);
             await refreshLists();
             status(
-              "Invitation accepted. Ask the owner to add accepted members.",
+              "Join request accepted. The owner must add you to the encrypted group before you can enter.",
             );
           },
         );
@@ -310,7 +333,7 @@ async function renderDetails() {
   if (!box) return;
   if (!selected) {
     box.innerHTML =
-      '<section><div class="tag">Your privacy</div><h3>Only the people you invite.</h3><p>New devices need approval. Compare fingerprints through a separate channel before trusting a device.</p><p>Chat state is held in memory. Closing or refreshing the page loses room keys.</p></section>';
+      '<section><div class="tag">Your privacy</div><h3>Only the people you invite.</h3><p>New sign-ins require your authenticator code. Replacing a session signs out the previous browser.</p><p>Chat state is held in memory. Closing or refreshing the page loses room keys.</p></section>';
     return;
   }
   const room = selected;
@@ -427,7 +450,7 @@ async function devices() {
   for (const d of entries) {
     const card = document.createElement("div");
     card.className = "card";
-    card.innerHTML = `<p><strong>${h(d.name)}</strong> · ${h(d.status.toLowerCase())}</p><div class="fingerprint">${h(d.fingerprint)}</div>`;
+    card.innerHTML = `<p><strong>${h(d.name)}</strong> · ${h(d.status.toLowerCase())}${d.id === own.deviceId ? " · This browser" : ""}</p><div class="fingerprint">${h(d.fingerprint)}</div>`;
     if (d.status === "PENDING") {
       const b = document.createElement("button");
       b.type = "button";
@@ -527,3 +550,141 @@ if (!window.isSecureContext || !crypto.subtle) {
   app.innerHTML =
     '<main class="pending-wrap"><h1>Use a secure connection.</h1><p>Open this site through HTTPS or localhost. Browser encryption is unavailable on an insecure remote connection.</p></main>';
 } else login();
+
+interface MfaState {
+  status: string;
+  previousSessions: {
+    id: string;
+    deviceName: string;
+    signedInAt: string;
+    expiresAt: string;
+  }[];
+  recoveryCodes: string[];
+}
+async function finishAuthentication() {
+  await client.api.refresh();
+  await client.online();
+  await signedIn();
+}
+async function authenticator(state?: MfaState) {
+  const t = client.api.tokens!;
+  const setup = t.deviceStatus === "MFA_SETUP";
+  if (t.deviceStatus === "MFA_SETUP_APPROVAL") {
+    app.innerHTML = `<main class="landing"><header>${brand}</header><section class="pending-wrap"><h2>Set up your authenticator on your original device.</h2><p>This account was created before authenticator setup. Sign in on the original approved browser or app first to secure it. Then sign in here with your authenticator code.</p><p id="auth-status" class="status"></p><button id="logout">Sign out</button></section></main>`;
+    bind("logout", async () => {
+      await client.logout();
+      login();
+    });
+    return;
+  }
+  if (!state && t.deviceStatus === "SESSION_CONFLICT")
+    state = await client.api.call<MfaState>("/api/v1/auth/mfa");
+  const conflict = state?.status === "SESSION_CONFLICT";
+  if (state?.recoveryCodes.length) {
+    // This one-time screen is the only place recovery codes are exposed. No local persistence.
+    app.innerHTML = `<main class="landing"><header>${brand}</header><section class="pending-wrap"><h2>Save your recovery codes.</h2><p>Each code can replace an authenticator code once. Store these somewhere private outside this browser. They will not be shown again.</p><pre class="fingerprint">${state.recoveryCodes.map(h).join("\n")}</pre><label><input id="codes-saved" type="checkbox"> I saved my recovery codes.</label><p id="auth-status" class="status"></p><button id="saved" class="primary">Continue</button></section></main>`;
+    bind("saved", async () => {
+      if (!document.querySelector<HTMLInputElement>("#codes-saved")!.checked)
+        throw new Error("Save your recovery codes before continuing.");
+      const next = { ...state!, recoveryCodes: [] };
+      if (conflict) await authenticator(next);
+      else await finishAuthentication();
+    });
+    return;
+  }
+  if (conflict) {
+    app.innerHTML = `<main class="landing"><header>${brand}</header><section class="pending-wrap"><h2>Another session is active.</h2><p>You verified your authenticator. Only one session can access this account at a time. Continuing will sign out the previous session and close its chat connection.</p>${state!.previousSessions.map((s) => `<div class="card"><strong>${h(s.deviceName)}</strong><p>Signed in ${h(new Date(s.signedInAt).toLocaleString())}</p></div>`).join("")}<p id="auth-status" class="status"></p><div class="inline-actions"><button id="replace-session" class="primary">Revoke previous session &amp; sign in here</button><button id="logout">Cancel and sign out</button></div></section></main>`;
+    bind("replace-session", async () => {
+      await client.api.call("/api/v1/auth/mfa/replace-session", "POST");
+      await finishAuthentication();
+    });
+    bind("logout", async () => {
+      await client.logout();
+      login();
+    });
+    return;
+  }
+  app.innerHTML = `<main class="landing"><header>${brand}</header><section class="pending-wrap"><div class="tag">${setup ? "Secure your account" : "Second verification"}</div><h2>${setup ? "Set up Google Authenticator." : "Enter your authenticator code."}</h2><p>${setup ? "Open Google Authenticator, tap +, and scan this QR code. Then enter the 6-digit code shown for Secret Chat Room." : "Open your authenticator app and enter the current 6-digit code. You can also use an unused recovery code."}</p>${setup ? '<canvas id="auth-qr" aria-label="Authenticator setup QR code"></canvas><details><summary>Cannot scan? Enter this setup key manually</summary><p id="setup-secret" class="fingerprint"></p></details>' : ""}<form id="mfa-form"><label>${setup ? "6-digit code" : "Authenticator or recovery code"}<input id="mfa-code" autocomplete="one-time-code" ${setup ? 'inputmode="numeric" pattern="[0-9]{6}" maxlength="6"' : 'maxlength="64"'} required></label><p id="auth-status" class="status" role="alert"></p><div class="inline-actions"><button id="verify-mfa" class="primary" type="submit">Verify &amp; continue</button><button id="logout" type="button">Sign out</button></div></form></section></main>`;
+  bind("logout", async () => {
+    await client.logout();
+    login();
+  });
+  const submit = document.querySelector<HTMLButtonElement>("#verify-mfa")!;
+  if (setup) {
+    submit.disabled = true;
+    try {
+      const qr = await client.api.call<{ secret: string; uri: string }>(
+        "/api/v1/auth/mfa/setup",
+        "POST",
+      );
+      await QRCode.toCanvas(
+        document.querySelector<HTMLCanvasElement>("#auth-qr")!,
+        qr.uri,
+        { width: 256, margin: 4 },
+      );
+      document.querySelector("#setup-secret")!.textContent = qr.secret;
+      submit.disabled = false;
+    } catch (error) {
+      status(
+        error instanceof Error
+          ? error.message
+          : "Unable to load authenticator setup.",
+      );
+    }
+  }
+  document.querySelector<HTMLFormElement>("#mfa-form")!.onsubmit = (event) => {
+    event.preventDefault();
+    const code = document.querySelector<HTMLInputElement>("#mfa-code")!;
+    void action(submit, async () => {
+      const result = await client.api.call<MfaState>(
+        "/api/v1/auth/mfa/verify",
+        "POST",
+        { code: code.value.trim() },
+      );
+      code.value = "";
+      if (result.recoveryCodes.length || result.status === "SESSION_CONFLICT")
+        await authenticator(result);
+      else await finishAuthentication();
+    });
+  };
+}
+async function account() {
+  const t = client.api.tokens!;
+  formDialog(
+    "Account & session",
+    `<p><strong>Username:</strong> ${h(t.username)}</p><p><strong>User ID:</strong> ${h(t.userId)}</p><p><strong>Current device ID:</strong> ${h(t.deviceId)}</p><p>Authenticator verification is required at every new sign-in. One session is active at a time. Devices can be reviewed from the Devices button in the header.</p>`,
+    async () => {},
+    "Done",
+  );
+}
+async function joinGroup() {
+  const invites = await client.api.call<Invite[]>("/api/v1/invites");
+  formDialog(
+    "Join a group",
+    `<p>Enter a group code from an invitation. Ask the owner to invite <strong>${h(client.api.tokens!.username)}</strong> first. After accepting, the owner adds your device to the encrypted group.</p><label>Group code<input name="code" maxlength="32" required></label><label>Group password, if required<input name="password" type="password" maxlength="128"></label><p>Invitations waiting for you: ${invites.length ? invites.map((i) => h(i.roomDisplayCode)).join(", ") : "None yet"}</p>`,
+    async (data) => {
+      const code = String(data.get("code") || "").trim();
+      const password = String(data.get("password") || "") || null;
+      const room = allRooms.find(
+        (r) => r.displayCode.toLowerCase() === code.toLowerCase(),
+      );
+      if (room) {
+        await choose(room);
+        return;
+      }
+      const invite = invites.find(
+        (i) => i.roomDisplayCode.toLowerCase() === code.toLowerCase(),
+      );
+      if (!invite)
+        throw new Error(
+          "No invitation for that code. Ask the owner to invite your username, then try again.",
+        );
+      await client.accept(invite, password);
+      await refreshLists();
+      status(
+        "Invitation accepted. Wait for the owner to add you to the encrypted group, then select it to enter.",
+      );
+    },
+    "Join group",
+  );
+}
