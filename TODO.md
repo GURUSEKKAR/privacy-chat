@@ -4,6 +4,8 @@ Updated 16 November 2026. MVP implementation and local acceptance are complete. 
 
 ## Completed implementation
 
+- [x] Validate account fields before submission; show inline failures, disable duplicate requests and prevent device-approval checks before login. Real GUI regression covers empty inputs, short passwords and unauthenticated approval.
+
 - [x] Run JavaFX from the project root with a relative TLS truststore path, avoiding plugin quote parsing in `RCR M_4`; verified an actual Maven-launched HTTPS health request over TLS 1.3.
 
 - [x] Accounts, device enrollment/approval/revocation, fingerprint checks and encrypted local storage.

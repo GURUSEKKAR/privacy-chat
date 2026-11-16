@@ -205,6 +205,9 @@ public class SecretChatClient implements AutoCloseable {
   /** After this device got approved elsewhere, refresh tokens and go online. */
   public void refreshApproval() {
     synchronized (lock) {
+      if (api.tokens() == null)
+        throw new IllegalStateException(
+            "Create an account or sign in before checking device approval.");
       TokenResponse t = api.refresh();
       if ("APPROVED".equals(t.deviceStatus()) && stomp == null) {
         goOnline();

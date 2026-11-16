@@ -13,9 +13,9 @@
   <Label text="Device name (used when enrolling this computer)"/>
   <TextField fx:id="deviceName"/>
   <HBox spacing="10">
-    <Button text="Sign in" defaultButton="true" onAction="#onLogin"/>
-    <Button text="Create account" onAction="#onRegister"/>
-    <Button text="Check approval" onAction="#onCheckApproval"/>
+    <Button fx:id="signIn" text="Sign in" defaultButton="true" onAction="#onLogin"/>
+    <Button fx:id="createAccount" text="Create account" onAction="#onRegister"/>
+    <Button fx:id="checkApproval" disable="true" text="Check approval" onAction="#onCheckApproval"/>
   </HBox>
   <Label fx:id="status" wrapText="true"/>
   <Label wrapText="true" style="-fx-text-fill: #777;"

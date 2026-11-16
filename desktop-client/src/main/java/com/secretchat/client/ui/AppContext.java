@@ -66,12 +66,17 @@ public final class AppContext {
 
   /** Runs a network call off the FX thread; delivers result or error back on the FX thread. */
   public <T> void async(Supplier<T> work, Consumer<T> onSuccess) {
+    async(work, onSuccess, this::handleFailure);
+  }
+
+  public <T> void async(
+      Supplier<T> work, Consumer<T> onSuccess, Consumer<RuntimeException> onFailure) {
     io.submit(() -> {
       try {
         T result = work.get();
         Platform.runLater(() -> onSuccess.accept(result));
       } catch (RuntimeException e) {
-        Platform.runLater(() -> handleFailure(e));
+        Platform.runLater(() -> onFailure.accept(e));
       }
     });
   }

@@ -137,6 +137,23 @@ class GuiAcceptanceTest extends IntegrationTestBase {
     });
     assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
     var initial = screen("a");
+    assertThat(
+            fx(() -> ((Button) initial.stage().getScene().lookup("#checkApproval")).isDisabled()))
+        .isTrue();
+    assertThatThrownBy(() -> initial.context().client().refreshApproval())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("sign in");
+    button(initial, "Create account");
+    await(() ->
+        fx(() ->
+            ((Label) initial.stage().getScene().lookup("#status")).getText().contains("username")));
+    text(initial, "username", "valid_user");
+    text(initial, "password", "short");
+    button(initial, "Create account");
+    await(() ->
+        fx(() ->
+            ((Label) initial.stage().getScene().lookup("#status")).getText().contains("12–128")));
+    assertThat(initial.context().client().tokens()).isNull();
     snapshot(initial, "login");
     String ownerName = uniqueName("guia");
     register(initial, ownerName);
