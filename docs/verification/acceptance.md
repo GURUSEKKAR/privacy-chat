@@ -2,7 +2,7 @@
 
 Verified 16 November 2026. The MVP implementation passes local acceptance; independent production security approval is still outstanding.
 
-The final verification run executed **61 Java tests, with zero failures, errors or skips**. The flags enable actual JavaFX screens, native macOS Keychain and the separately packaged TLS Docker application.
+The final verification run executed **64 Java tests, with zero failures, errors or skips**. The flags enable actual JavaFX screens, native macOS Keychain and the separately packaged TLS Docker application.
 
 ```sh
 mvn -o verify spotless:check -Dsecretchat.gui=true -Dsecretchat.keychain.integration=true -Dsecretchat.deployment=true -Dsecretchat.web=true
@@ -11,10 +11,11 @@ mvn -o verify spotless:check -Dsecretchat.gui=true -Dsecretchat.keychain.integra
 | Suite | Tests |
 | --- | ---: |
 | AuthIntegrationTest | 8 |
+| RoomSettingsTest | 2 |
 | MfaIntegrationTest | 7 |
 | TotpTest | 2 |
 | BrowserAccessTest | 3 |
-| BrowserInteropTest | 2 |
+| BrowserInteropTest | 3 |
 | BoundedAuthenticationStateTest | 2 |
 | ClientConfigurationTest | 1 |
 | OperationsTest | 2 |
@@ -71,3 +72,9 @@ The development website is served at http://localhost:5173. The packaged backend
 ## Authenticator acceptance — 17 November 2026
 
 The full local suite now passes 61 Java tests and four Node tests, without failures, errors or skips. The added cases cover RFC 6238 known answers, authenticated encryption of seeds, replay refusal, one-use recovery codes, mandatory MFA on known/new devices, forbidden password-only chat/ticket access, setup restrictions for existing accounts, expired incomplete sign-ins, explicit replacement and concurrent activation. A running browser SDK enrollment confirms a generated TOTP before publishing MLS keys and exchanging an encrypted message through the real TLS backend. Native desktop packaging and runtime verification also pass. Actual phone-camera QR scanning and browser UI interaction remain manual acceptance work; backend/SDK tests do not establish those visual behaviors.
+
+## Null group controls and themes — 17 November 2026
+
+The final combined suite passes 64 Java tests and four Node tests with zero failures, errors or skips. Custom group names, owner-only settings, password replacement/removal, expired-cycle boundaries and selective MLS member removal are verified. The three-browser SDK test received a decrypted message in 25 ms locally through the WebSocket-triggered path without a polling timer. This single sample does not establish public-network, throughput or visual rendering performance. SAST, production browser compilation, TLS deployment smoke and running proxy encryption checks pass.
+
+The website has simplified username/password forms and Null branding, a default green-on-black terminal theme, dotted controls, monospace typography and a persistent Normal theme option. Member UI shows names; public device fingerprints render only for owners while encryption roster checks remain intact. No group route exposes authenticator seeds or recovery codes. Browser visual checks remain pending because the computer/browser access host is unavailable. The native Null app/ZIP is rebuilt and its runtime self-check passes.

@@ -1,0 +1,9 @@
+{
+  "verified_at_utc": "2026-11-16T21:03:05.774622+00:00",
+  "verification_inputs_sha256": "c0da9f482426dfa931bac179b7537e3b6bb9d0b215d9ec0d03acabd67fdb8694",
+  "test": "BrowserInteropTest.browserPushDeliversWithoutPollingAndOwnerRemovesOnlySelectedMember",
+  "local_send_to_decrypted_receipt_ms": 25,
+  "polling_timer_used": false,
+  "public_network_latency_measured": false,
+  "scope": "One local three-browser SDK regression sample, not a throughput benchmark, actual DOM-render measurement or hosted latency guarantee."
+}

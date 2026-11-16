@@ -23,7 +23,7 @@ public class SecretChatApp extends Application {
     String dir = System.getProperty("secretchat.dataDir");
     Path dataDir = dir == null ? LocalVault.defaultBaseDir() : Path.of(dir);
     context = new AppContext(stage, server, dataDir);
-    stage.setTitle("Secret Chat Room");
+    stage.setTitle("Null");
     stage.setOnCloseRequest(e -> Platform.exit());
     context.showLogin();
   }

@@ -10,7 +10,7 @@
   </parent>
 
   <artifactId>protocol-contracts</artifactId>
-  <name>Secret Chat Room :: Protocol Contracts</name>
+  <name>Null :: Protocol Contracts</name>
   <description>Wire DTOs shared by backend and client. Public/opaque data only, never private keys.</description>
 
   <dependencies>

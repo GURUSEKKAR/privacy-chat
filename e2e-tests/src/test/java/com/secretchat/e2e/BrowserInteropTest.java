@@ -163,4 +163,67 @@ class BrowserInteropTest extends IntegrationTestBase {
           .isInstanceOf(com.secretchat.client.api.ApiException.class);
     }
   }
+
+  @Test
+  @Timeout(90)
+  void browserPushDeliversWithoutPollingAndOwnerRemovesOnlySelectedMember() throws Exception {
+    try (var owner = new Browser("fast-owner");
+        var removed = new Browser("fast-removed");
+        var retained = new Browser("fast-retained")) {
+      var a = owner.register(uniqueName("fastowner"));
+      var b = removed.register(uniqueName("fastmember"));
+      var c = retained.register(uniqueName("fastretained"));
+      var room = owner.call(Map.of("command", "create", "name", "Project team"));
+      String id = room.get("id").asString();
+      assertThat(room.get("name").asString()).isEqualTo("Project team");
+      for (var entry :
+          java.util.List.of(java.util.Map.entry(removed, b), java.util.Map.entry(retained, c))) {
+        owner.call(
+            Map.of(
+                "command",
+                "invite",
+                "room",
+                id,
+                "user",
+                entry.getValue().get("username").asString()));
+        var inv = entry.getKey().call(Map.of("command", "invites")).get(0);
+        entry.getKey().call(Map.of("command", "accept", "invite", inv));
+      }
+      owner.call(Map.of("command", "add", "room", id));
+      for (var client : java.util.List.of(owner, removed, retained))
+        client.call(Map.of("command", "enter", "room", id));
+      long start = System.currentTimeMillis();
+      owner.call(Map.of("command", "send", "text", "Instant WebSocket message"));
+      var delivered =
+          retained.call(Map.of("command", "waitMessage", "text", "Instant WebSocket message"));
+      long latency = delivered.get("receivedAt").asLong() - start;
+      System.out.println(
+          "Local WebSocket send-to-decrypted-receipt latency: "
+              + latency
+              + " ms (no REST polling timer)");
+      assertThat(latency).isLessThan(1000);
+      var updated =
+          owner.call(
+              Map.of(
+                  "command",
+                  "settings",
+                  "room",
+                  id,
+                  "settings",
+                  Map.of(
+                      "name",
+                      "Renamed team",
+                      "messageTtlSeconds",
+                      120,
+                      "resetIntervalSeconds",
+                      1800,
+                      "changePassword",
+                      false)));
+      assertThat(updated.get("name").asString()).isEqualTo("Renamed team");
+      owner.call(Map.of("command", "remove", "room", id, "user", b.get("userId").asString()));
+      owner.call(Map.of("command", "send", "text", "Remaining member only"));
+      retained.call(Map.of("command", "waitMessage", "text", "Remaining member only"));
+      assertThat(removed.call(Map.of("command", "rooms")).size()).isZero();
+    }
+  }
 }

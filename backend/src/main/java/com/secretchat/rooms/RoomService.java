@@ -77,6 +77,7 @@ public class RoomService {
             req.resetIntervalSeconds(),
             req.privacyMode() == null ? PrivacyMode.TEMPORARY_CATCH_UP : req.privacyMode(),
             now);
+    if (req.name() != null && !req.name().isBlank()) room.setName(req.name().trim());
     try {
       rooms.saveAndFlush(room);
     } catch (DataIntegrityViolationException e) {
@@ -85,6 +86,29 @@ public class RoomService {
     Membership owner = Membership.owner(room.getId(), p.userId(), p.deviceId(), now);
     memberships.save(owner);
     return view(room, owner);
+  }
+
+  @Transactional
+  public RoomView update(
+      AuthPrincipal p, UUID roomId, com.secretchat.protocol.RoomDtos.UpdateRoomRequest req) {
+    var a = access.requireOwner(p, roomId, true);
+    RoomAccess.requireRoomActive(a.room(), clock.instant());
+    if (req.name() == null || req.name().isBlank() || req.name().trim().length() > 80)
+      throw ApiException.badRequest("INVALID_NAME", "Group name must contain 1–80 characters.");
+    String password = req.roomPassword();
+    if (req.changePassword() && password != null && !password.isEmpty() && password.length() < 8)
+      throw ApiException.badRequest(
+          "INVALID_ROOM_PASSWORD",
+          "Group password must contain at least 8 characters, or be removed.");
+    a.room()
+        .updateSettings(
+            req.name().trim(),
+            req.messageTtlSeconds(),
+            req.resetIntervalSeconds(),
+            req.changePassword(),
+            req.changePassword() ? roomPasswords.hash(password) : null,
+            clock.instant());
+    return view(a.room(), a.membership());
   }
 
   @Transactional(readOnly = true)
@@ -150,7 +174,8 @@ public class RoomService {
         r.getResetIntervalSeconds(),
         r.getNextResetAt(),
         r.getPrivacyMode(),
-        r.getPasswordHash() != null);
+        r.getPasswordHash() != null,
+        r.getName());
   }
 
   private String randomCode() {

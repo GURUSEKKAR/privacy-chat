@@ -71,8 +71,32 @@ const operations = {
     };
   },
   async create(p) {
-    selected = await client.create(600, 3600, p.password ?? null);
+    selected = await client.create(600, 3600, p.password ?? null, p.name);
     return selected;
+  },
+  async remove(p) {
+    return client.removeMember(
+      await client.api.call("/api/v1/rooms/" + p.room),
+      p.user,
+    );
+  },
+  async settings(p) {
+    return client.api.call("/api/v1/rooms/" + p.room, "PUT", p.settings);
+  },
+  async waitMessage(p) {
+    const deadline = Date.now() + 3000;
+    while (Date.now() < deadline) {
+      const messages = [...client.messages.values()];
+      if (messages.some((m) => m.cleartext === p.text))
+        return {
+          messages: messages.map((m) => ({ text: m.cleartext })),
+          receivedAt: Date.now(),
+        };
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    throw new Error(
+      "No WebSocket-triggered message within 3 seconds; this check does not poll REST",
+    );
   },
   async rooms() {
     return client.rooms();

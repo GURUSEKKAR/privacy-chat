@@ -1,9 +1,36 @@
 import "./style.css";
+import { readTheme, storeTheme, type Theme } from "./theme";
 import QRCode from "qrcode";
 import { ChatClient, type Displayed } from "./client";
 import { validateAccount } from "./bytes";
 import type { Room, Invite, Member, Device } from "./types";
+let theme: Theme = readTheme(localStorage);
+function applyTheme() {
+  document.documentElement.dataset.theme = theme;
+  document
+    .querySelectorAll<HTMLButtonElement>("[data-theme-toggle]")
+    .forEach((button) => {
+      button.textContent = `Theme: ${theme === "terminal" ? "Terminal" : "Normal"}`;
+      button.setAttribute(
+        "aria-label",
+        `Switch to ${theme === "terminal" ? "Normal" : "Terminal"} theme`,
+      );
+      button.setAttribute("aria-pressed", String(theme === "terminal"));
+    });
+}
+applyTheme();
+document.addEventListener("click", (event) => {
+  if (
+    !(event.target instanceof Element) ||
+    !event.target.closest("[data-theme-toggle]")
+  )
+    return;
+  theme = theme === "terminal" ? "normal" : "terminal";
+  storeTheme(theme, localStorage);
+  applyTheme();
+});
 const app = document.querySelector<HTMLDivElement>("#app")!;
+new MutationObserver(applyTheme).observe(app, { childList: true });
 const apiOrigin = (
   import.meta.env.VITE_API_ORIGIN?.trim() || location.origin
 ).replace(/\/+$/, "");
@@ -34,7 +61,7 @@ const h = (value: unknown) =>
       ]!,
   );
 const brand =
-  '<div class="brand"><img src="/favicon.svg" alt=""><span>Secret Chat Room</span></div>';
+  '<div class="brand"><span class="brand-mark" aria-hidden="true">&gt;_</span><span>Null<small>Nothing stays forever.</small></span></div><button type="button" data-theme-toggle>Theme</button>';
 function status(message: string) {
   const node = document.querySelector<HTMLElement>("#auth-status,#app-status");
   if (node) node.textContent = message;
@@ -59,10 +86,16 @@ function bind(id: string, work: () => Promise<void>) {
   if (b) b.onclick = () => void action(b, work);
 }
 function login() {
-  app.innerHTML = `<main class="landing"><header class="top">${brand}<span class="secure-pill">Invitation only. Encrypted on your device.</span></header><div class="auth-layout"><section class="intro"><div class="tag">A little less permanent</div><h1>Good conversations.<br>Without the history.</h1><p>A private place for your people. Invite who belongs, choose how long messages stay, and let the rest disappear.</p><div class="features"><span>Messages encrypted before they leave your browser</span><span>Authenticator verification protects every sign-in</span><span>Temporary history, with a countdown you control</span></div><small>Release candidate · Independent security review pending</small></section><section class="auth-card"><div class="tabs"><button id="register-tab" type="button">Create account</button><button id="login-tab" type="button">Sign in</button></div><h2 id="form-title">Make yourself at home.</h2><p class="muted" id="form-description">Create your account, then scan a QR code with Google Authenticator.</p><form id="auth-form" novalidate><label>Username<input id="username" name="username" autocomplete="username" placeholder="e.g. guru.r.c" maxlength="32" required></label><label>Password<div class="password-wrap"><input id="password" type="password" name="password" autocomplete="new-password" maxlength="128" required><button id="show-password" type="button" aria-label="Show password">Show</button></div></label><p id="password-count" class="hint" aria-live="polite">0 characters · Use 12–128 for a new account</p><label>Device name<input id="device" name="device" value="My browser" maxlength="64" required></label><p id="auth-status" class="status" role="alert"></p><button id="authenticate" class="primary form-action" type="submit">Create account</button></form><div class="notice">This browser stores a password-encrypted device key. Your password and chat history are never saved by the website.</div></section></div><footer class="footer">Messages stay in memory and disappear at expiry or when you leave. People can still copy or screenshot what they see. Restarting the browser loses room keys; the owner must reset and invite members again.</footer></main>`;
+  app.innerHTML = `<main class="landing auth-only"><header>${brand}</header><section class="auth-card"><div class="tabs"><button id="register-tab" type="button">Create account</button><button id="login-tab" type="button">Sign in</button></div><h2 id="form-title">Create account</h2><p class="muted" id="form-description">Set up your authenticator after creating your account.</p><form id="auth-form" novalidate><label>Username<input id="username" name="username" autocomplete="username" maxlength="32" required></label><label>Password<div class="password-wrap"><input id="password" type="password" name="password" autocomplete="new-password" maxlength="128" required><button id="show-password" type="button" aria-label="Show password">Show</button></div></label><p id="password-count" class="hint" aria-live="polite"></p><p id="auth-status" class="status" role="alert"></p><button id="authenticate" class="primary form-action" type="submit">Create account</button></form></section></main>`;
   const password = document.querySelector<HTMLInputElement>("#password")!,
-    user = document.querySelector<HTMLInputElement>("#username")!,
-    device = document.querySelector<HTMLInputElement>("#device")!;
+    user = document.querySelector<HTMLInputElement>("#username")!;
+  const deviceName = /Android/i.test(navigator.userAgent)
+    ? "Android browser"
+    : /iPhone|iPad/i.test(navigator.userAgent)
+      ? "iPhone / iPad browser"
+      : /Mac/i.test(navigator.userAgent)
+        ? "Mac browser"
+        : "Web browser";
   const hint = document.querySelector<HTMLElement>("#password-count")!;
   const update = () => {
     hint.textContent = `${password.value.length} characters · ${mode === "register" ? "Use 12–128 for a new account" : "Enter your existing password"}`;
@@ -80,7 +113,7 @@ function login() {
       .querySelector("#login-tab")!
       .classList.toggle("active", mode === "login");
     document.querySelector("#form-title")!.textContent =
-      mode === "register" ? "Make yourself at home." : "Welcome back.";
+      mode === "register" ? "Create account" : "Sign in";
     document.querySelector("#form-description")!.textContent =
       mode === "register"
         ? "Create your account, then scan a QR code with Google Authenticator."
@@ -111,7 +144,7 @@ function login() {
     const error = validateAccount(
       user.value,
       password.value,
-      device.value,
+      deviceName,
       mode === "register",
     );
     if (error) {
@@ -125,7 +158,7 @@ function login() {
         await client.authenticate(
           user.value,
           p,
-          device.value,
+          deviceName,
           mode === "register",
         );
         password.value = "";
@@ -180,7 +213,11 @@ async function signedIn() {
 }
 async function refreshLists() {
   if (client.api.tokens?.deviceStatus !== "APPROVED") return;
-  allRooms = await client.rooms();
+  const [rooms, invites] = await Promise.all([
+    client.rooms(),
+    client.api.call<Invite[]>("/api/v1/invites"),
+  ]);
+  allRooms = rooms;
   const container = document.querySelector("#rooms");
   if (container) {
     container.innerHTML = allRooms.length
@@ -189,12 +226,11 @@ async function refreshLists() {
     for (const r of allRooms) {
       const button = document.createElement("button");
       button.className = "room-card" + (selected?.id === r.id ? " active" : "");
-      button.innerHTML = `<strong>${h(r.displayCode || r.id.slice(0, 8))}</strong><small>${h(r.myRole === "OWNER" ? "Owner" : "Member")} · ${h(r.state === "ACTIVE" ? "Ready" : r.state.replaceAll("_", " ").toLowerCase())}</small>`;
+      button.innerHTML = `<strong>${h(r.name || r.displayCode || r.id.slice(0, 8))}</strong><small>${h(r.myRole === "OWNER" ? "Owner" : "Member")} · ${h(r.state === "ACTIVE" ? "Ready" : r.state.replaceAll("_", " ").toLowerCase())}</small>`;
       button.onclick = () => void action(button, async () => choose(r));
       container.append(button);
     }
   }
-  const invites = await client.api.call<Invite[]>("/api/v1/invites");
   const box = document.querySelector("#invitations");
   if (box) {
     box.innerHTML = "";
@@ -257,7 +293,7 @@ function renderChat() {
     void renderDetails();
     return;
   }
-  box.innerHTML = `<header class="chat-head"><div><h2>${h(selected.displayCode || selected.id.slice(0, 8))}</h2><small id="room-timer">Temporary conversation</small></div><button id="leave">Leave room</button></header><div id="messages" class="messages" role="log" aria-label="Messages"></div><form id="compose" class="composer"><div class="compose-row"><textarea id="message-input" aria-label="Message" placeholder="Write something temporary…" rows="1" maxlength="32000" ${client.sessionId ? "" : "disabled"}></textarea><button class="primary" type="submit" ${client.sessionId ? "" : "disabled"}>Send</button></div><small>Encrypted on this browser. Messages disappear at expiry or when you leave.</small></form>`;
+  box.innerHTML = `<header class="chat-head"><div><h2>${h(selected.name || selected.displayCode || selected.id.slice(0, 8))}</h2><small id="room-timer">Temporary conversation</small></div><button id="leave">Leave room</button></header><div id="messages" class="messages" role="log" aria-label="Messages"></div><form id="compose" class="composer"><div class="compose-row"><textarea id="message-input" aria-label="Message" placeholder="Write something temporary…" rows="1" maxlength="32000" ${client.sessionId ? "" : "disabled"}></textarea><button class="primary" type="submit" ${client.sessionId ? "" : "disabled"}>Send</button></div><small>Encrypted on this browser. Messages disappear at expiry or when you leave.</small></form>`;
   bind("leave", async () => {
     await client.leave();
     selected = null;
@@ -339,17 +375,36 @@ async function renderDetails() {
   const room = selected;
   const members = await client.members(room.id).catch(() => [] as Member[]);
   if (selected?.id !== room.id) return;
-  box.innerHTML = `<section><div class="tag">Room details</div><h3>Members</h3><div id="members"></div><p>Owner fingerprint</p><div class="fingerprint">${h(room.ownerDeviceFingerprint)}</div></section><section id="owner-tools"></section><section><h3>Before you leave</h3><p>Leaving clears the messages shown in this session. Viewed messages cannot be retrieved in a new session.</p></section>`;
+  box.innerHTML = `<section><div class="tag">Room details</div><h3>Members</h3><div id="members"></div>${room.myRole === "OWNER" ? `<p>Group code: ${h(room.displayCode)}</p><p>Your public device fingerprint</p><div class="fingerprint">${h(room.ownerDeviceFingerprint)}</div>` : ""}</section><section id="owner-tools"></section><section><h3>Before you leave</h3><p>Leaving clears the messages shown in this session. Viewed messages cannot be retrieved in a new session.</p></section>`;
   const list = box.querySelector("#members")!;
   for (const m of members.filter((m) => m.state === "ACTIVE")) {
     const row = document.createElement("div");
     row.className = "member";
-    row.innerHTML = `<strong>${h(m.username)} ${m.role === "OWNER" ? "· owner" : ""}</strong><span class="fingerprint">${h(m.deviceFingerprint)}</span>`;
+    row.innerHTML = `<strong>${h(m.username)} ${room.myRole === "OWNER" && m.role === "OWNER" ? "· owner" : ""}</strong>${room.myRole === "OWNER" ? `<span class="fingerprint">${h(m.deviceFingerprint)}</span>` : ""}`;
+    if (room.myRole === "OWNER" && m.role !== "OWNER") {
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "danger";
+      remove.textContent = "Remove";
+      remove.onclick = () =>
+        formDialog(
+          "Remove member?",
+          `<p>Remove ${h(m.username)} and rotate the group encryption keys? Remaining members stay in the group.</p>`,
+          async () => {
+            await client.removeMember(room, m.userId);
+            await refreshLists();
+            status("Member removed. Encryption keys rotated.");
+          },
+          "Remove member",
+        );
+      row.append(remove);
+    }
     list.append(row);
   }
   if (room.myRole === "OWNER") {
     box.querySelector("#owner-tools")!.innerHTML =
-      '<h3>Owner controls</h3><button id="invite">Invite someone</button><button id="add-members">Add accepted members</button><button id="reset" class="danger">Reset room</button>';
+      '<h3>Owner controls</h3><button id="group-settings">Group settings</button><button id="invite">Invite someone</button><button id="add-members">Add accepted members</button><button id="reset" class="danger">Reset room</button>';
+    bind("group-settings", async () => groupSettings(room));
     bind("invite", async () =>
       formDialog(
         "Invite someone",
@@ -424,13 +479,14 @@ function formDialog(
 async function newRoom() {
   formDialog(
     "Create a private room",
-    '<label>Message lifetime (minutes)<input name="ttl" type="number" min="1" max="1440" value="10" required></label><label>Room reset interval (minutes)<input name="reset" type="number" min="1" max="10080" value="60" required></label><label>Optional room password<input name="password" type="password" minlength="8" maxlength="128"></label>',
+    '<label>Group name<input name="name" required maxlength="80" placeholder="e.g. Weekend plans"></label><label>Message lifetime (minutes)<input name="ttl" type="number" min="1" max="1440" value="10" required></label><label>Room reset interval (minutes)<input name="reset" type="number" min="1" max="10080" value="60" required></label><label>Optional room password<input name="password" type="password" minlength="8" maxlength="128"></label>',
     async (data) => {
       const roomPassword = String(data.get("password") || "") || null;
       const room = await client.create(
         Number(data.get("ttl")) * 60,
         Number(data.get("reset")) * 60,
         roomPassword,
+        String(data.get("name") || "").trim(),
       );
       await refreshLists();
       selected = room;
@@ -526,7 +582,7 @@ async function poll() {
     polling = false;
   }
 }
-setInterval(() => void poll(), 2000);
+setInterval(() => void poll(), 15000);
 setInterval(() => {
   if (client.api.tokens?.deviceStatus === "APPROVED" && !polling)
     void client
@@ -604,7 +660,7 @@ async function authenticator(state?: MfaState) {
     });
     return;
   }
-  app.innerHTML = `<main class="landing"><header>${brand}</header><section class="pending-wrap"><div class="tag">${setup ? "Secure your account" : "Second verification"}</div><h2>${setup ? "Set up Google Authenticator." : "Enter your authenticator code."}</h2><p>${setup ? "Open Google Authenticator, tap +, and scan this QR code. Then enter the 6-digit code shown for Secret Chat Room." : "Open your authenticator app and enter the current 6-digit code. You can also use an unused recovery code."}</p>${setup ? '<canvas id="auth-qr" aria-label="Authenticator setup QR code"></canvas><details><summary>Cannot scan? Enter this setup key manually</summary><p id="setup-secret" class="fingerprint"></p></details>' : ""}<form id="mfa-form"><label>${setup ? "6-digit code" : "Authenticator or recovery code"}<input id="mfa-code" autocomplete="one-time-code" ${setup ? 'inputmode="numeric" pattern="[0-9]{6}" maxlength="6"' : 'maxlength="64"'} required></label><p id="auth-status" class="status" role="alert"></p><div class="inline-actions"><button id="verify-mfa" class="primary" type="submit">Verify &amp; continue</button><button id="logout" type="button">Sign out</button></div></form></section></main>`;
+  app.innerHTML = `<main class="landing"><header>${brand}</header><section class="pending-wrap"><div class="tag">${setup ? "Secure your account" : "Second verification"}</div><h2>${setup ? "Set up Google Authenticator." : "Enter your authenticator code."}</h2><p>${setup ? "Open Google Authenticator, tap +, and scan this QR code. Then enter the 6-digit code shown for Null." : "Open your authenticator app and enter the current 6-digit code. You can also use an unused recovery code."}</p>${setup ? '<canvas id="auth-qr" aria-label="Authenticator setup QR code"></canvas><details><summary>Cannot scan? Enter this setup key manually</summary><p id="setup-secret" class="fingerprint"></p></details>' : ""}<form id="mfa-form"><label>${setup ? "6-digit code" : "Authenticator or recovery code"}<input id="mfa-code" autocomplete="one-time-code" ${setup ? 'inputmode="numeric" pattern="[0-9]{6}" maxlength="6"' : 'maxlength="64"'} required></label><p id="auth-status" class="status" role="alert"></p><div class="inline-actions"><button id="verify-mfa" class="primary" type="submit">Verify &amp; continue</button><button id="logout" type="button">Sign out</button></div></form></section></main>`;
   bind("logout", async () => {
     await client.logout();
     login();
@@ -686,5 +742,38 @@ async function joinGroup() {
       );
     },
     "Join group",
+  );
+}
+
+async function groupSettings(room: Room) {
+  formDialog(
+    "Group settings",
+    `<label>Group name<input name="name" maxlength="80" required value="${h(room.name || room.displayCode)}"></label><label>Message lifetime (minutes)<input name="ttl" type="number" min="1" max="1440" required step="any" value="${room.messageTtlSeconds / 60}"></label><label>Room reset interval (minutes)<input name="reset" type="number" min="1" max="10080" required step="any" value="${room.resetIntervalSeconds / 60}"></label><label>Password<select name="passwordAction"><option value="keep">Keep current password setting</option><option value="set">Set a new password</option><option value="remove">Remove password</option></select></label><label>New password (only when setting a new password)<input name="password" type="password" minlength="8" maxlength="128" autocomplete="new-password"></label><p>Message lifetime applies to new messages. Changing the reset interval starts a new countdown from now; it does not delete messages or remove members. Password changes affect future group entry.</p>`,
+    async (data) => {
+      const passwordAction = String(data.get("passwordAction"));
+      const password = String(data.get("password") || "");
+      if (passwordAction === "set" && password.length < 8)
+        throw new Error(
+          "Enter a new group password with at least 8 characters.",
+        );
+      const updated = await client.api.call<Room>(
+        "/api/v1/rooms/" + room.id,
+        "PUT",
+        {
+          name: String(data.get("name") || "").trim(),
+          messageTtlSeconds: Number(data.get("ttl")) * 60,
+          resetIntervalSeconds: Number(data.get("reset")) * 60,
+          changePassword: passwordAction !== "keep",
+          roomPassword: passwordAction === "set" ? password : null,
+        },
+      );
+      selected = updated;
+      if (client.room?.id === updated.id) client.room = updated;
+      renderChat();
+      renderMessages();
+      await refreshLists();
+      status("Group settings saved.");
+    },
+    "Save settings",
   );
 }

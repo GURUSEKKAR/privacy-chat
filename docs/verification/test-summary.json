@@ -1,7 +1,7 @@
 {
-  "verified_at_utc": "2026-11-16T20:15:17.736502+00:00",
+  "verified_at_utc": "2026-11-16T21:03:05.774622+00:00",
   "totals": {
-    "tests": 61,
+    "tests": 64,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -57,6 +57,13 @@
       "skipped": 0
     },
     {
+      "suite": "com.secretchat.rooms.RoomSettingsTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "com.secretchat.web.BrowserAccessTest",
       "tests": 3,
       "failures": 0,
@@ -100,7 +107,7 @@
     },
     {
       "suite": "com.secretchat.e2e.BrowserInteropTest",
-      "tests": 2,
+      "tests": 3,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -133,7 +140,7 @@
     "Independent security review and closure of findings",
     "Organizational threat model sign-off"
   ],
-  "verification_inputs_sha256": "2463581faa43f08efe75fd9015131adc9f9995433604cb67777badcdf17eb28d",
+  "verification_inputs_sha256": "c0da9f482426dfa931bac179b7537e3b6bb9d0b215d9ec0d03acabd67fdb8694",
   "maven_launcher_runtime_check": {
     "passed": true,
     "working_directory_contains_spaces": true,
@@ -159,5 +166,13 @@
     "explicit single-session replacement revokes old access/refresh tokens",
     "concurrent replacements authorize exactly one login",
     "incomplete login expiry"
+  ],
+  "group_regressions": [
+    "custom name persisted independently of invitation code",
+    "owner-only updates of name, TTL, reset schedule and password",
+    "members cannot change settings",
+    "expired cycle cannot be extended through settings",
+    "three browser clients: WebSocket-triggered delivery without timer polling",
+    "MLS Remove excludes selected member and retains delivery to remaining member"
   ]
 }

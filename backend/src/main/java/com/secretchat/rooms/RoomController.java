@@ -84,6 +84,14 @@ public class RoomController {
     return rooms.get(p, roomId);
   }
 
+  @org.springframework.web.bind.annotation.PutMapping("/{roomId}")
+  public RoomView update(
+      @AuthenticationPrincipal AuthPrincipal p,
+      @PathVariable UUID roomId,
+      @Valid @RequestBody com.secretchat.protocol.RoomDtos.UpdateRoomRequest req) {
+    return rooms.update(p, roomId, req);
+  }
+
   @GetMapping("/{roomId}/members")
   public List<MemberView> members(
       @AuthenticationPrincipal AuthPrincipal p, @PathVariable UUID roomId) {

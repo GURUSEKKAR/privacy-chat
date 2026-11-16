@@ -33,3 +33,7 @@ Register/login retain the device-key challenge protocol and return restricted be
 - `POST /api/v1/auth/mfa/replace-session`: only after recent successful second-factor verification, explicitly revokes other sessions and activates this one.
 
 After confirmation/activation call refresh to receive the current `deviceStatus`. `SESSION_CONFLICT` permits no chat access until replacement; `APPROVED` identifies the one fully authorized login. A waiting login may sign out to preserve the previous active session. Revocation invalidates access and refresh tokens and WebSocket authorization. Clients must erase displayed chat on socket loss and return to sign-in on revoked-token HTTP 401.
+
+## Mutable owner settings
+
+`CreateRoomRequest` accepts optional `name` (up to 80 characters); legacy clients default to the stable display code. `RoomView` includes `name`. `PUT /api/v1/rooms/{roomId}` is restricted to the owner's approved room device and takes `{name,messageTtlSeconds,resetIntervalSeconds,changePassword,roomPassword}`. The name is nonblank and at most 80 characters; existing TTL/reset bounds apply. `changePassword:false` preserves the hash, `true` with null/empty removes it, and `true` with a new 8–128-character password replaces it. Settings serialize under the room lock. Expired/non-active cycles cannot be extended through settings. Member removal continues through owner-authorized MLS `REMOVE`, not an unencrypted membership-only deletion.

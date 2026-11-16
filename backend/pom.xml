@@ -10,7 +10,7 @@
   </parent>
 
   <artifactId>backend</artifactId>
-  <name>Secret Chat Room :: Backend</name>
+  <name>Null :: Backend</name>
   <description>Spring Boot delivery service: auth, devices, rooms, encrypted relay, receipts, expiry, reset.</description>
 
   <dependencies>

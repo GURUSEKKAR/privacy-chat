@@ -104,10 +104,9 @@ export class ChatClient {
   async online() {
     if (!this.mls || this.api.tokens?.deviceStatus !== "APPROVED")
       throw new Error("This browser device needs approval.");
-    await this.publishPackages();
-    await this.connect();
+    await Promise.all([this.publishPackages(), this.connect()]);
   }
-  async publishPackages(count = 8) {
+  async publishPackages(count = 2) {
     if (!this.mls) throw new Error("Sign in first.");
     await this.api.call("/api/v1/devices/me/key-packages", "PUT", {
       keyPackages: await this.mls.packages(count),
@@ -197,6 +196,26 @@ export class ChatClient {
         "The room was reset or your membership ended. Its displayed messages have been cleared.",
       );
       this.onChange();
+    } else if (
+      e.type === "MESSAGE" &&
+      this.room?.id === e.roomId &&
+      this.sessionId
+    ) {
+      void this.serialized(async () => {
+        if (!this.room || !this.sessionId || this.room.id !== e.roomId) return;
+        if (this.mls!.epoch(e.roomId) !== e.epoch) await this.catchUp();
+        // REST rechecks recipient/session eligibility, so delayed push cannot replay a viewed message after re-entry.
+        await this.readPending();
+        this.onChange();
+      }).catch((error) => this.onWarning(error.message));
+    } else if (
+      e.type === "MLS_COMMIT" &&
+      this.room?.id === e.roomId &&
+      this.sessionId
+    ) {
+      void this.serialized(() => this.catchUp()).catch((error) =>
+        this.onWarning(error.message),
+      );
     } else if (e.type === "ERROR")
       this.onWarning(e.detail || "Chat request failed.");
     else this.onChange();
@@ -207,12 +226,18 @@ export class ChatClient {
   async members(room: string): Promise<Member[]> {
     return this.api.call("/api/v1/rooms/" + room + "/members");
   }
-  async create(ttl: number, reset: number, roomPassword: string | null) {
+  async create(
+    ttl: number,
+    reset: number,
+    roomPassword: string | null,
+    name?: string,
+  ) {
     const room = await this.api.call<Room>("/api/v1/rooms", "POST", {
       messageTtlSeconds: ttl,
       resetIntervalSeconds: reset,
       roomPassword,
       privacyMode: "TEMPORARY_CATCH_UP",
+      name,
     });
     await this.mls!.create(room.id);
     return room;
@@ -328,7 +353,6 @@ export class ChatClient {
     if (utf8.encode(value).length > 32_000)
       throw new Error("Message is too long.");
     if (!this.room || !this.sessionId) throw new Error("Enter a room first.");
-    await this.catchUp();
     if (!this.socket?.connected)
       throw new Error("Use Reconnect before sending.");
     const r = this.room,
@@ -407,6 +431,33 @@ export class ChatClient {
       newGroup: false,
     });
     prepared.apply();
+  }
+  async removeMember(room: Room, userId: string) {
+    if (room.myRole !== "OWNER")
+      throw new Error("Only the owner can remove members.");
+    if (userId === this.api.tokens?.userId)
+      throw new Error("The owner cannot remove themselves.");
+    const current = await this.api.call<Room>("/api/v1/rooms/" + room.id);
+    const events = await this.api.call<{ epoch: number; commit: string }[]>(
+      `/api/v1/rooms/${room.id}/mls/events?afterEpoch=${this.mls!.epoch(room.id)}`,
+    );
+    for (const event of events)
+      if (event.epoch > this.mls!.epoch(room.id))
+        await this.mls!.commit(room.id, event.commit, event.epoch);
+    const prepared = await this.mls!.prepareRemove(room.id, userId);
+    await this.api.call(`/api/v1/rooms/${room.id}/mls/commit`, "POST", {
+      generation: current.generation,
+      fromEpoch: this.mls!.epoch(room.id),
+      purpose: "REMOVE",
+      commit: prepared.commit,
+      welcome: null,
+      addedInvitationIds: [],
+      removedUserIds: [userId],
+      newGroup: false,
+    });
+    prepared.apply();
+    if (this.room?.id === room.id)
+      this.room = await this.api.call<Room>("/api/v1/rooms/" + room.id);
   }
   async reset(room: Room) {
     await this.leave();

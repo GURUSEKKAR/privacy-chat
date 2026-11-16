@@ -1,10 +1,10 @@
 {
-  "verified_at_utc": "2026-11-16T20:15:17.736502+00:00",
-  "verification_inputs_sha256": "2463581faa43f08efe75fd9015131adc9f9995433604cb67777badcdf17eb28d",
+  "verified_at_utc": "2026-11-16T21:03:05.774622+00:00",
+  "verification_inputs_sha256": "c0da9f482426dfa931bac179b7537e3b6bb9d0b215d9ec0d03acabd67fdb8694",
   "passed": true,
   "tests": 4,
   "failures": 0,
   "scope": "Web SDK account/vault/MLS tests and production bundle import resolution; two Java-to-TypeScript interoperability tests are included in test-summary.json",
   "running_proxy_check": "passed: mandatory authenticator enrollment/confirmation, verified TLS, socket ticket, encrypted send and view-once re-entry",
-  "visual_acceptance": "pending: real-phone authenticator QR scanning and hosted browser UI acceptance"
+  "visual_acceptance": "pending: Terminal/Normal mobile and desktop browser visual checks; browser-control host unavailable"
 }

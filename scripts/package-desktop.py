@@ -18,7 +18,7 @@ if 'version "21.' not in version.stderr:raise SystemExit('Native release packagi
 environment=dict(os.environ,JAVA_HOME=home)
 def run(command):subprocess.run([str(x) for x in command],check=True,env=environment)
 output=args.output.resolve();output.mkdir(parents=True,exist_ok=True)
-name='Secret Chat Room';image=output/(name+'.app' if platform.system()=='Darwin' else name)
+name='Null';image=output/(name+'.app' if platform.system()=='Darwin' else name)
 if image.exists():
     if not args.replace:raise SystemExit('Image already exists; use --replace to replace this generated app')
     shutil.rmtree(image)
@@ -27,7 +27,7 @@ with tempfile.TemporaryDirectory(prefix='desktop-input-',dir=root/'target') as s
     stage=pathlib.Path(staging)
     run(['mvn','-B','-pl','desktop-client','-am','dependency:copy-dependencies','-DincludeScope=runtime','-DoutputDirectory='+str(stage)])
     jar=root/'desktop-client/target/desktop-client-0.1.0-SNAPSHOT.jar';shutil.copy2(jar,stage/jar.name)
-    command=[jpackage,'--type','app-image','--name',name,'--app-version','1.0.0','--vendor','Secret Chat Room',
+    command=[jpackage,'--type','app-image','--name',name,'--app-version','1.0.0','--vendor','Null',
         '--description','Ephemeral invitation-only encrypted group chat','--input',stage,'--main-jar',jar.name,
         '--main-class','com.secretchat.client.Launcher','--dest',output]
     if args.local_tls:
@@ -44,7 +44,7 @@ result=next((line for line in check.stdout.splitlines() if line.startswith('{'))
 if not result or json.loads(result).get('ok') is not True:raise SystemExit('Packaged runtime did not verify')
 (output/'runtime-check.json').write_text(result+'\n')
 if platform.system()=='Darwin':
-    archive=output/'SecretChatRoom-macos.zip'
+    archive=output/'Null-macos.zip'
     if archive.exists():archive.unlink()
     run(['/usr/bin/ditto','-c','-k','--sequesterRsrc','--keepParent',image,archive])
     print('Native application:',image)

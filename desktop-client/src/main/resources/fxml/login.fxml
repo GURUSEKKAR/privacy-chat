@@ -5,7 +5,7 @@
 <VBox xmlns:fx="http://javafx.com/fxml" fx:controller="com.secretchat.client.ui.LoginController"
       spacing="10" maxWidth="420">
   <padding><Insets top="40" left="40" right="40" bottom="40"/></padding>
-  <Label text="Secret Chat Room" style="-fx-font-size: 22px; -fx-font-weight: bold;"/>
+  <Label text="Null" style="-fx-font-size: 22px; -fx-font-weight: bold;"/>
   <Label text="Username"/>
   <TextField fx:id="username" promptText="3-32 chars: a-z 0-9 _ . -"/>
   <Label text="Password"/>

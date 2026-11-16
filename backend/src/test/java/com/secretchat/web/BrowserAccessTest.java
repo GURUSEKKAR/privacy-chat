@@ -28,7 +28,7 @@ class BrowserAccessTest extends IntegrationTestBase {
             HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/")).GET().build(),
             HttpResponse.BodyHandlers.ofString());
     assertThat(page.statusCode()).isEqualTo(200);
-    assertThat(page.body()).contains("Secret Chat Room", "assets/");
+    assertThat(page.body()).contains("Null", "assets/");
     assertThat(page.headers().firstValue("Content-Security-Policy").orElseThrow())
         .contains("script-src 'self'", "frame-ancestors 'none'")
         .doesNotContain("unsafe-inline");

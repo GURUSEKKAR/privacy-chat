@@ -1,0 +1,3 @@
+ALTER TABLE rooms ADD COLUMN name VARCHAR(80);
+UPDATE rooms SET name = display_code;
+ALTER TABLE rooms ALTER COLUMN name SET NOT NULL;

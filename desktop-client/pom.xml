@@ -10,7 +10,7 @@
   </parent>
 
   <artifactId>desktop-client</artifactId>
-  <name>Secret Chat Room :: Desktop Client</name>
+  <name>Null :: Desktop Client</name>
   <description>JavaFX client. MLS encryption/decryption and private keys live only here.</description>
 
   <properties>

@@ -25,7 +25,24 @@ public final class RoomDtos {
       @Size(min = 8, max = 128) String roomPassword,
       @NotNull @Min(10) @Max(86_400) Integer messageTtlSeconds,
       @NotNull @Min(60) @Max(604_800) Integer resetIntervalSeconds,
-      PrivacyMode privacyMode) {}
+      PrivacyMode privacyMode,
+      @Size(max = 80) String name) {
+    public CreateRoomRequest(
+        String displayCode,
+        String roomPassword,
+        Integer messageTtlSeconds,
+        Integer resetIntervalSeconds,
+        PrivacyMode privacyMode) {
+      this(displayCode, roomPassword, messageTtlSeconds, resetIntervalSeconds, privacyMode, null);
+    }
+  }
+
+  public record UpdateRoomRequest(
+      @NotBlank @Size(max = 80) String name,
+      @NotNull @Min(10) @Max(86_400) Integer messageTtlSeconds,
+      @NotNull @Min(60) @Max(604_800) Integer resetIntervalSeconds,
+      boolean changePassword,
+      @Size(max = 128) String roomPassword) {}
 
   public record RoomView(
       UUID id,
@@ -42,7 +59,8 @@ public final class RoomDtos {
       int resetIntervalSeconds,
       Instant nextResetAt,
       PrivacyMode privacyMode,
-      boolean passwordProtected) {}
+      boolean passwordProtected,
+      String name) {}
 
   public record MemberView(
       UUID userId,

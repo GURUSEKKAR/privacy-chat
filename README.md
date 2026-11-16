@@ -1,4 +1,4 @@
-# Secret Chat Room
+# Null
 
 Java 21, Spring Boot, PostgreSQL, JavaFX and TypeScript browser implementation of the supplied workflow. The implementation includes device approval, invitations, encrypted live/offline delivery, viewing sessions, expiry, owner-only reset/rekey, desktop recovery and operational checks. Independent security review remains required before advertising production-safe E2EE.
 
@@ -147,3 +147,19 @@ The default runtime requires MFA. The `test` profile explicitly disables mandato
 The website header provides **Account & session** and **Devices**. The sidebar provides **Create group** and **Join group**. To join, ask the owner to invite your username, enter the invitation's group code/password or accept it under Invitations, then wait for the owner to add your device to the encrypted group. Group codes are not public access credentials. The owner must verify device fingerprints during MLS membership changes.
 
 Authenticator approval does not transfer old MLS room keys or room device membership. Chat keys remain in memory. After losing group state, owners reset/reinvite from their room device; a new member device needs a fresh invitation. Keep using one stable website domain to preserve the password-encrypted device identity.
+
+## Group names, owner settings and message delivery
+
+The website's sign-in and registration pages show username and password only; a browser device label is generated automatically for session management. Group creation accepts a human-readable name independent of its stable invitation code. Owners can rename active groups, update new-message lifetime and reset interval, and keep/set/remove the entry password from **Group settings**. A changed reset interval schedules the next reset from the settings change; renaming alone does not move the deadline. Existing message expiry times are not extended or shortened. Password changes affect future entry, not already authorized sessions or MLS keys. An expired cycle must be reset/rekeyed before changing settings.
+
+Owners can remove individual non-owner members with a confirmation. This submits an MLS Remove commit, rotates the group epoch, revokes the removed member's viewing sessions and leaves other memberships intact. Group member lists show names and role; only the owner UI renders public device fingerprints. These fingerprints are public encryption-identity checks, not authenticator codes. MLS participants necessarily hold each other's public verification keys, so hiding their fingerprint labels is a UI privacy choice, not cryptographic secrecy. Authenticator seeds, TOTP/recovery codes and private keys are never part of group-member responses.
+
+Live WebSocket MESSAGE notifications immediately trigger an authorized read/decryption; membership commits also trigger immediate epoch catch-up. The read still enforces session/view-once eligibility, preventing delayed push from replaying an already consumed message after re-entry. A 15-second fallback handles missed push events. Sending uses the synchronized MLS epoch directly, with server-side generation/epoch/membership validation, instead of four pre-send HTTP requests. Initial key-package generation is reduced from eight to two; key publication/socket connection and room/invitation loading run in parallel. Password hashing and vault derivation costs remain intact.
+
+A three-browser SDK test measures send-to-decrypted-receipt latency without invoking a polling command, with a local sub-second regression check. It also checks custom naming/settings and removal of one member while another continues receiving messages. This is not a public-internet latency SLA or a measurement of camera/DOM rendering. Render Free's CPU limits, network distance and cold starts can still delay sign-in or delivery. See [Render's free-instance limits](https://render.com/docs/free) and [resource constraints](https://render.com/articles/from-side-project-to-production-scaling-your-first-app). Keep API and PostgreSQL in the same region; measure warmed-host latency from your users before deciding whether another region or more CPU is required.
+
+## Null appearance
+
+The application is named **Null** — nothing stays forever. The website starts in **Terminal** mode: black background, green text, monospace typography, flat controls and dotted borders. The theme button is available on registration, sign-in, authenticator, session-confirmation and dashboard screens. Select **Normal** to use the existing light interface. The browser stores only this appearance preference under `null.theme`; switching themes does not sign you out or change encryption. QR codes retain standard camera-readable black/white pixels.
+
+The product title, browser tab, favicon, desktop window, native distribution name and new authenticator issuer label use Null. Existing protocol labels, vault paths, GitHub repository names and applied migration checksums are retained for compatibility. Existing authenticator entries continue generating valid codes; their old display label can be renamed inside the authenticator app.

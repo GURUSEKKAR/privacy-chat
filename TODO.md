@@ -1,6 +1,6 @@
 # Implementation TODO
 
-Updated 17 November 2026. MVP implementation and local acceptance are complete. Sixty-one Java tests and four web tests pass with no failures or skips, including real GUI, native Keychain and TLS deployment tests. Free-tier Render/Vercel deployment configuration is prepared; see [deployment instructions](README.md#free-render--vercel-deployment). The original task IDs below are updated against the evidence in [acceptance.md](docs/verification/acceptance.md).
+Updated 17 November 2026. MVP implementation and local acceptance are complete. Sixty-four Java tests and four web tests pass with no failures or skips, including real GUI, native Keychain and TLS deployment tests. Free-tier Render/Vercel deployment configuration is prepared; see [deployment instructions](README.md#free-render--vercel-deployment). The original task IDs below are updated against the evidence in [acceptance.md](docs/verification/acceptance.md).
 
 ## Completed implementation
 
@@ -229,3 +229,21 @@ Checked items have implementation and local verification evidence. Human approva
 - [x] Add desktop authenticator verification, recovery-code display and explicit session replacement.
 - [ ] Synchronize the Render Blueprint or configure its stable MFA encryption key, deploy the updated backend/frontend, and exercise phone QR scanning on the public deployment.
 - [ ] Independent review of the expanded authenticator/session implementation; no production security approval is implied.
+
+## Group controls and performance update — 17 November 2026
+
+- [x] Remove the promotional login content and device-name fields; use an automatic browser label.
+- [x] Add custom group names and persistent owner-only settings for name, new-message lifetime, reset interval and entry password.
+- [x] Add selective member removal using MLS Remove/rekey with confirmation.
+- [x] Display other members' public device fingerprints only in the owner's UI; retain cryptographic identity checks and never expose MFA secrets.
+- [x] Replace two-second receive polling with immediate WebSocket-triggered delivery and a recovery fallback; remove normal pre-send HTTP synchronization.
+- [x] Reduce initial key-package generation and parallelize independent authentication initialization.
+- [x] Add settings authorization and three-browser real-time/removal regression tests.
+- [ ] Review the updated owner/member/mobile UI and warmed-host latency on the user's hosted deployment.
+
+## Null branding and appearance — 17 November 2026
+
+- [x] Rename user-facing web/native titles, new authenticator entries, favicon and native distribution to Null.
+- [x] Add default Terminal mode with black backgrounds, green monospace text and dotted controls/panels.
+- [x] Keep Normal mode and a persistent, accessible theme switch across all website authentication and dashboard screens.
+- [ ] Visual acceptance of both themes on desktop/mobile browsers; the browser-control host is unavailable.

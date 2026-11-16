@@ -9,6 +9,7 @@ export interface Tokens {
   deviceFingerprint: string;
 }
 export interface Room {
+  name: string;
   id: string;
   displayCode: string;
   ownerUserId: string;

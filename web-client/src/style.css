@@ -615,3 +615,192 @@ dialog .status {
   width: 100%;
   margin-top: 0.6rem;
 }
+
+.auth-only {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+.auth-only .auth-card {
+  width: 100%;
+  max-width: 460px;
+  margin: auto;
+}
+select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+}
+
+/* Null themes: normal keeps the existing light palette; terminal uses an explicit green-on-black palette. */
+.brand small {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+}
+.brand-mark {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  border: 1px dotted currentColor;
+  padding: 5px 8px;
+  font-size: 20px;
+}
+.landing > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+[data-theme-toggle] {
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 8px 10px;
+}
+:root[data-theme="normal"] {
+  color-scheme: light;
+}
+:root[data-theme="terminal"] {
+  color-scheme: dark;
+  font-family:
+    ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas,
+    "Liberation Mono", monospace;
+  color: #39ff88;
+  background: #000;
+  --green: #39ff88;
+  --lime: #39ff88;
+  --muted: #8bd8a8;
+  --line: #287747;
+  --ink: #39ff88;
+}
+[data-theme="terminal"] body,
+[data-theme="terminal"] .shell,
+[data-theme="terminal"] .app-header,
+[data-theme="terminal"] .auth-card,
+[data-theme="terminal"] .pending-wrap,
+[data-theme="terminal"] .sidebar,
+[data-theme="terminal"] .chat,
+[data-theme="terminal"] .chat-head,
+[data-theme="terminal"] .details,
+[data-theme="terminal"] .composer,
+[data-theme="terminal"] dialog,
+[data-theme="terminal"] .tabs,
+[data-theme="terminal"] .card,
+[data-theme="terminal"] .bubble,
+[data-theme="terminal"] .own .bubble,
+[data-theme="terminal"] .notice,
+[data-theme="terminal"] .global-status {
+  background: #000;
+  color: #39ff88;
+  border-color: var(--line);
+  border-style: dotted;
+  border-radius: 0;
+  box-shadow: none;
+}
+[data-theme="terminal"] button,
+[data-theme="terminal"] button.primary,
+[data-theme="terminal"] .tabs button.active,
+[data-theme="terminal"] input,
+[data-theme="terminal"] textarea,
+[data-theme="terminal"] select,
+[data-theme="terminal"] .room-card,
+[data-theme="terminal"] .fingerprint,
+[data-theme="terminal"] .member,
+[data-theme="terminal"] .secure-pill {
+  background: #000;
+  color: #39ff88;
+  border: 1px dotted #287747;
+  border-radius: 0;
+  box-shadow: none;
+}
+[data-theme="terminal"] button:hover,
+[data-theme="terminal"] button.primary:hover,
+[data-theme="terminal"] .room-card.active {
+  background: #072514;
+  border-color: #39ff88;
+}
+[data-theme="terminal"] input:focus,
+[data-theme="terminal"] textarea:focus,
+[data-theme="terminal"] select:focus,
+[data-theme="terminal"] button:focus-visible {
+  outline: 1px solid #39ff88;
+  outline-offset: 3px;
+}
+[data-theme="terminal"] input::placeholder,
+[data-theme="terminal"] textarea::placeholder {
+  color: #74ac88;
+  opacity: 1;
+}
+[data-theme="terminal"] .tag,
+[data-theme="terminal"] .status,
+[data-theme="terminal"] button.danger,
+[data-theme="terminal"] .symbol,
+[data-theme="terminal"] .hint,
+[data-theme="terminal"] .message small,
+[data-theme="terminal"] .own .message small,
+[data-theme="terminal"] .footer,
+[data-theme="terminal"] .notice,
+[data-theme="terminal"] a {
+  color: #8bd8a8;
+}
+[data-theme="terminal"] h1,
+[data-theme="terminal"] h2,
+[data-theme="terminal"] h3 {
+  letter-spacing: 0;
+  color: #39ff88;
+}
+[data-theme="terminal"] .auth-card h2::before {
+  content: "> ";
+}
+[data-theme="terminal"] .auth-card {
+  border-top: 1px dotted #39ff88;
+}
+[data-theme="terminal"] dialog::backdrop {
+  background: #000c;
+}
+[data-theme="terminal"] ::selection {
+  background: #39ff88;
+  color: #000;
+}
+[data-theme="terminal"] #auth-qr {
+  background: white;
+} /* Standard high-contrast QR pixels remain camera-readable. */
+@media (max-width: 700px) {
+  .app-header {
+    height: auto;
+    min-height: 70px;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  .header-actions {
+    flex-wrap: wrap;
+  }
+  [data-theme-toggle] {
+    margin-left: auto;
+  }
+}
+[data-theme="terminal"] .auth-card,
+[data-theme="terminal"] .pending-wrap,
+[data-theme="terminal"] .app-header,
+[data-theme="terminal"] .sidebar,
+[data-theme="terminal"] .chat,
+[data-theme="terminal"] .details,
+[data-theme="terminal"] .chat-head,
+[data-theme="terminal"] .composer,
+[data-theme="terminal"] dialog,
+[data-theme="terminal"] .card,
+[data-theme="terminal"] .bubble,
+[data-theme="terminal"] .notice {
+  border-width: 1px;
+}
+[data-theme="terminal"] body,
+[data-theme="terminal"] .shell {
+  border: 0;
+}

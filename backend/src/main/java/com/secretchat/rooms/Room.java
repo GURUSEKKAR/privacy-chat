@@ -19,6 +19,9 @@ public class Room {
   @Column(name = "display_code", nullable = false, length = 32)
   private String displayCode;
 
+  @Column(nullable = false, length = 80)
+  private String name;
+
   @Column(name = "owner_user_id", nullable = false)
   private UUID ownerUserId;
 
@@ -71,6 +74,7 @@ public class Room {
       Instant now) {
     this.id = id;
     this.displayCode = displayCode;
+    this.name = displayCode;
     this.ownerUserId = ownerUserId;
     this.ownerDeviceId = ownerDeviceId;
     this.passwordHash = passwordHash;
@@ -113,6 +117,25 @@ public class Room {
 
   public String getDisplayCode() {
     return displayCode;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String value) {
+    name = value;
+  }
+
+  public void updateSettings(
+      String name, int ttl, int interval, boolean changePassword, String hash, Instant now) {
+    this.name = name;
+    this.messageTtlSeconds = ttl;
+    if (this.resetIntervalSeconds != interval) {
+      this.resetIntervalSeconds = interval;
+      scheduleNextReset(now);
+    }
+    if (changePassword) this.passwordHash = hash;
   }
 
   public UUID getOwnerUserId() {

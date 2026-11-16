@@ -95,7 +95,7 @@ public class MfaService {
     String secret = totp.decrypt(u.getTotpSecret(), u.getId());
     String label =
         java.net.URLEncoder.encode(
-                "Secret Chat Room:" + u.getUsername(), java.nio.charset.StandardCharsets.UTF_8)
+                "Null:" + u.getUsername(), java.nio.charset.StandardCharsets.UTF_8)
             .replace("+", "%20");
     return new Setup(
         secret,
@@ -103,7 +103,7 @@ public class MfaService {
             + label
             + "?secret="
             + secret
-            + "&issuer=Secret%20Chat%20Room&algorithm=SHA1&digits=6&period=30");
+            + "&issuer=Null&algorithm=SHA1&digits=6&period=30");
   }
 
   @Transactional(noRollbackFor = ApiException.class)

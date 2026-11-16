@@ -10,7 +10,7 @@
   </parent>
 
   <artifactId>e2e-tests</artifactId>
-  <name>Secret Chat Room :: End-to-end Tests</name>
+  <name>Null :: End-to-end Tests</name>
   <description>Runs real headless clients (MLS + REST + STOMP) against a real backend and PostgreSQL.</description>
 
   <dependencies>

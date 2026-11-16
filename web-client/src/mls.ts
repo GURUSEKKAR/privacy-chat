@@ -241,6 +241,34 @@ export class Mls {
       },
     };
   }
+  async prepareRemove(room: string, userId: string) {
+    const state = this.require(room);
+    const node = state.ratchetTree.findIndex(
+      (n) =>
+        n?.nodeType === "leaf" &&
+        n.leaf.credential.credentialType === "basic" &&
+        text.decode(n.leaf.credential.identity) === userId,
+    );
+    if (node < 0 || userId === this.userId)
+      throw new Error("Select an active non-owner member.");
+    const result = await createCommit(
+      { state, cipherSuite: await suiteReady },
+      {
+        extraProposals: [
+          { proposalType: "remove", remove: { removed: node / 2 } },
+        ],
+        ratchetTreeExtension: true,
+        wireAsPublicMessage: true,
+      },
+    );
+    return {
+      commit: b64(encodeMlsMessage(result.commit)),
+      apply: () => {
+        this.groups.set(room, result.newState);
+        result.consumed.forEach(zeroOutUint8Array);
+      },
+    };
+  }
   async commit(room: string, encoded: string, expected: number) {
     const bytes = unb64(encoded);
     const decoded = decodeMlsMessage(bytes, 0);
