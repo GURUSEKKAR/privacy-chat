@@ -8,6 +8,7 @@ import com.secretchat.expiry.ResetService;
 import com.secretchat.protocol.RoomDtos.*;
 import com.secretchat.testsupport.IntegrationTestBase;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -31,10 +32,20 @@ class MessageLifecycleIntegrationTest extends IntegrationTestBase {
     UUID sb = openSession(b, id);
     var message = send(a, id, sa, fakeCiphertext("once"));
     assertThat(messages.pending(b.principal(), id, sb)).hasSize(1);
+    clock.advance(Duration.ofNanos(789));
     var first = receipts.acknowledgeView(b.principal(), id, message.messageId(), sb);
-    // PostgreSQL timestamps retain microseconds; Linux clocks can provide nanoseconds.
+    // Capture the persisted value: PostgreSQL rounds nanoseconds to microseconds.
+    var storedFirst =
+        jdbc.queryForObject(
+                "select viewed_at from message_recipients where message_id = ? and recipient_user_id = ?",
+                OffsetDateTime.class,
+                message.messageId(),
+                b.principal().userId())
+            .toInstant();
+    assertThat(storedFirst).isCloseTo(first.viewedAt(), within(1, ChronoUnit.MICROS));
+    clock.advance(Duration.ofSeconds(1));
     assertThat(receipts.acknowledgeView(b.principal(), id, message.messageId(), sb).viewedAt())
-        .isEqualTo(first.viewedAt().truncatedTo(ChronoUnit.MICROS));
+        .isEqualTo(storedFirst);
     roomSessions.end(b.principal(), id, sb);
     UUID sb2 = openSession(b, id);
     assertThat(messages.pending(b.principal(), id, sb2)).isEmpty();
