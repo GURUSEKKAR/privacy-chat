@@ -18,7 +18,7 @@
     "ts-mls": "1.6.4"
   },
   "devDependencies": {
-    "@types/node": "24.19.2",
+    "@types/node": "26.6.6",
     "@types/qrcode": "1.5.6",
     "prettier": "3.10.1",
     "typescript": "5.9.3",
