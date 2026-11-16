@@ -26,7 +26,10 @@ jobs:
       - run: python3 scripts/scan-container-offline.py
       - name: Stop isolated acceptance services
         if: always()
-        run: docker compose -p secretchat-acceptance --env-file .local/tls/stack.env -f compose.secure.yaml down -v
+        run: |
+          if [ -f .local/tls/stack.env ]; then
+            docker compose -p secretchat-acceptance --env-file .local/tls/stack.env -f compose.secure.yaml down -v
+          fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

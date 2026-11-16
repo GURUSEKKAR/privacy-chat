@@ -8,6 +8,7 @@ import com.secretchat.expiry.ResetService;
 import com.secretchat.protocol.RoomDtos.*;
 import com.secretchat.testsupport.IntegrationTestBase;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,8 +32,9 @@ class MessageLifecycleIntegrationTest extends IntegrationTestBase {
     var message = send(a, id, sa, fakeCiphertext("once"));
     assertThat(messages.pending(b.principal(), id, sb)).hasSize(1);
     var first = receipts.acknowledgeView(b.principal(), id, message.messageId(), sb);
+    // PostgreSQL timestamps retain microseconds; Linux clocks can provide nanoseconds.
     assertThat(receipts.acknowledgeView(b.principal(), id, message.messageId(), sb).viewedAt())
-        .isEqualTo(first.viewedAt());
+        .isEqualTo(first.viewedAt().truncatedTo(ChronoUnit.MICROS));
     roomSessions.end(b.principal(), id, sb);
     UUID sb2 = openSession(b, id);
     assertThat(messages.pending(b.principal(), id, sb2)).isEmpty();

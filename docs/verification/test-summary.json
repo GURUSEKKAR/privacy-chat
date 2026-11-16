@@ -1,5 +1,5 @@
 {
-  "verified_at_utc": "2026-11-16T07:07:05.260781+00:00",
+  "verified_at_utc": "2026-11-16T07:13:14.480451+00:00",
   "totals": {
     "tests": 47,
     "failures": 0,
@@ -106,5 +106,5 @@
     "Organizational threat model sign-off",
     "Hosted pull-request CI run after connecting a remote repository"
   ],
-  "verification_inputs_sha256": "edc5f2a99cb15b8b1e419ddc6281c76b57c4f096781063b935eecc3a5a778c26"
+  "verification_inputs_sha256": "c1909f00fb3356b80965aaabd5f804f8b63b1cdd63acc4e841d9c8a4df61b04e"
 }
