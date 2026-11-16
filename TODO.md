@@ -1,8 +1,12 @@
 # Implementation TODO
 
-Updated 16 November 2026. MVP implementation and local acceptance are complete. Forty-seven tests pass with no failures or skips, including real GUI, native Keychain and TLS deployment tests. The original task IDs below are updated against the evidence in [acceptance.md](docs/verification/acceptance.md).
+Updated 16 November 2026. MVP implementation and local acceptance are complete. Fifty-two Java tests and four web tests pass with no failures or skips, including real GUI, native Keychain and TLS deployment tests. The original task IDs below are updated against the evidence in [acceptance.md](docs/verification/acceptance.md).
 
 ## Completed implementation
+
+- [x] Browser registration/sign-in, encrypted device vault, approval, invitations, owner controls and MLS temporary chat; desktop/web interoperability in both owner directions.
+- [x] Single-use browser WebSocket tickets, 30-second expiry, same-origin handshake enforcement and public-asset/API separation.
+- [x] Live desktop/browser password character counts and explicit 12-character boundary regression.
 
 - [x] Validate account fields before submission; show inline failures, disable duplicate requests and prevent device-approval checks before login. Real GUI regression covers empty inputs, short passwords and unauthenticated approval.
 
@@ -23,6 +27,8 @@ Updated 16 November 2026. MVP implementation and local acceptance are complete. 
 - [x] F-06 — hosted Linux verification passed, including GUI, HTTPS/WSS, restore and offline container scan ([run](https://github.com/GURUSEKKAR/privacy-chat/actions/runs/43824064106)). The workflow also triggers on pull requests.
 
 ## Remaining release gates
+
+- [ ] Browser visual acceptance on target browsers; the browser-control host is unavailable. Programmatic SDK, transport and encryption checks pass.
 
 - [ ] R-05 — organizational sign-off of the documented threat model.
 - [ ] Q-06 — independent external security review and closure of its findings.

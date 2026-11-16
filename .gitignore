@@ -13,3 +13,7 @@ target/
 *.dump.age
 __pycache__/
 *.pyc
+
+# Browser client dependencies and generated output
+node_modules/
+dist/

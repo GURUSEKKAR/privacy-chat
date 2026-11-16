@@ -2,15 +2,17 @@
 
 Verified 16 November 2026. The MVP implementation passes local acceptance; independent production security approval is still outstanding.
 
-The final verification run executed **47 tests, with zero failures, errors or skips**. The flags enable actual JavaFX screens, native macOS Keychain and the separately packaged TLS Docker application.
+The final verification run executed **52 Java tests, with zero failures, errors or skips**. The flags enable actual JavaFX screens, native macOS Keychain and the separately packaged TLS Docker application.
 
 ```sh
-mvn -o verify spotless:check -Dsecretchat.gui=true -Dsecretchat.keychain.integration=true -Dsecretchat.deployment=true
+mvn -o verify spotless:check -Dsecretchat.gui=true -Dsecretchat.keychain.integration=true -Dsecretchat.deployment=true -Dsecretchat.web=true
 ```
 
 | Suite | Tests |
 | --- | ---: |
 | AuthIntegrationTest | 8 |
+| BrowserAccessTest | 3 |
+| BrowserInteropTest | 2 |
 | BoundedAuthenticationStateTest | 2 |
 | ClientConfigurationTest | 1 |
 | OperationsTest | 2 |
@@ -55,3 +57,11 @@ The native macOS bundle self-check passes with three FXML screens, Bouncy Castle
 Trivy 0.76.2 scanned 140 Ubuntu 26.04 OS packages with networking disabled while the private image was mounted; no known high/critical findings were reported. Java libraries are covered separately by the OSV dependency audit. The final backend rebuild changes the application layer; its OS base layers are compared with the scanned image rather than representing a second full scan. Hosted CI scans its fresh image. Docker Scout was not used because automatic approval review rejected its potential upload of private image metadata/content.
 
 Hosted Linux CI passed on commit `dda6f5143a302d49594a31fcdada61a5adf12f96`: [verification run](https://github.com/GURUSEKKAR/privacy-chat/actions/runs/43824064106). It includes the full build, JavaFX GUI, static/dependency checks, certificate-validated HTTPS/WSS, database restore and offline OS scan. The same workflow triggers on pull requests; this evidence is a push run.
+
+## Website acceptance
+
+The website supports encrypted browser/desktop conversations in either owner direction. BrowserAccessTest checks public assets versus protected API routes, one-use 30-second tickets, superseded and expired tickets, logout invalidation, pending-device rejection and cross-origin socket rejection. BrowserInteropTest runs the actual TypeScript SDK against Spring Boot/PostgreSQL and the Java desktop client, including message exchange, viewed-message re-entry and reset exclusion.
+
+Four Node tests check password lengths at 11 and 12 characters, password-encrypted vault preservation on failed unlock, MLS sender authentication, tampering, replay and reset isolation, plus static import resolution in the production JavaScript bundle. A separate running deployment check through the loopback preview verifies API proxying, server-certificate validation, browser ticket transport, encrypted send and view-once re-entry. Browser UI interaction could not be visually verified because the browser access host is unavailable; SDK and HTTP checks do not establish visual acceptance.
+
+The development website is served at http://localhost:5173. The packaged backend serves its built assets at https://localhost:18443/. These are local endpoints, not a public Internet deployment. The browser MLS implementation expands the pending independent-review scope.

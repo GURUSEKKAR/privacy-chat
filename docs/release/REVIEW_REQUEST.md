@@ -23,3 +23,7 @@ Confirm the threat model and limitations in docs/threat-model.md: screenshots an
 Copy approvals.example.json to ignored .local/release/approvals.json. The responsible humans fill in their decisions, identities, timestamps and source digest. Place the review report in the project documentation and record its SHA-256. Add the successful GitHub Actions run ID after publishing the reviewed commit. Run scripts/release-readiness.py to validate source binding and recorded evidence. This script cannot establish a reviewer's real-world identity or independence.
 
 No independent approval has been supplied or invented. Do not label the software production-safe E2EE until the review and finding closure are complete.
+
+## Browser extension review
+
+Include the ts-mls 1.6.4 implementation and WebCrypto key vault, origin-local fingerprint pins, same-origin CSP, DOM rendering and display receipts, memory-only tokens and chat state, page lifecycle clearing, browser/desktop interoperability, and one-use WebSocket ticket issuance/consumption. Review the loopback development proxy separately from the packaged same-origin production assets. Browser visual acceptance remains pending while browser-control access is unavailable.

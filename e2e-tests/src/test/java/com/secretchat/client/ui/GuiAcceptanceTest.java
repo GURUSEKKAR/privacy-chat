@@ -153,6 +153,11 @@ class GuiAcceptanceTest extends IntegrationTestBase {
     await(() ->
         fx(() ->
             ((Label) initial.stage().getScene().lookup("#status")).getText().contains("12–128")));
+    assertThat(fx(() -> ((Label) initial.stage().getScene().lookup("#passwordHint")).getText()))
+        .contains("5 characters");
+    text(initial, "password", "123456789012");
+    assertThat(fx(() -> ((Label) initial.stage().getScene().lookup("#passwordHint")).getText()))
+        .contains("12 characters");
     assertThat(initial.context().client().tokens()).isNull();
     snapshot(initial, "login");
     String ownerName = uniqueName("guia");

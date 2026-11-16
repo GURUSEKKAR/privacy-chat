@@ -14,6 +14,7 @@ public class LoginController {
   @FXML private PasswordField password;
   @FXML private TextField deviceName;
   @FXML private Label status;
+  @FXML private Label passwordHint;
 
   @FXML private Button signIn;
   @FXML private Button createAccount;
@@ -23,6 +24,12 @@ public class LoginController {
 
   void init(AppContext ctx) {
     this.ctx = ctx;
+    password
+        .textProperty()
+        .addListener((observable, previous, current) -> {
+          passwordHint.setText(current.length() + " characters · New accounts need 12–128");
+          status.setText("");
+        });
     deviceName.setText(System.getProperty("user.name", "desktop") + "-desktop");
   }
 
@@ -130,7 +137,7 @@ public class LoginController {
     if (password.getText().isBlank() || length > 128 || (registering && length < 12)) {
       status.setText(
           registering
-              ? "Enter a password with 12–128 characters."
+              ? "Enter a password with 12–128 characters. You entered " + length + "."
               : "Enter your password (up to 128 characters).");
       password.requestFocus();
       return false;

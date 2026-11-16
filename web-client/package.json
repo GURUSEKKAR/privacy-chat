@@ -1,0 +1,25 @@
+{
+  "name": "privacy-chat-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "test": "node --test test/*.test.mjs",
+    "verify:local": "node test/proxy-check.mjs"
+  },
+  "dependencies": {
+    "@noble/ciphers": "2.1.1",
+    "@noble/curves": "2.0.1",
+    "@noble/post-quantum": "0.5.2",
+    "@stomp/stompjs": "7.5.0",
+    "ts-mls": "1.6.4"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "prettier": "3.10.1",
+    "typescript": "5.9.3",
+    "vite": "8.3.8"
+  }
+}

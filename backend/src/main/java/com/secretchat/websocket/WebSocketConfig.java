@@ -17,15 +17,34 @@ import org.springframework.web.socket.config.annotation.WebSocketTransportRegist
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   private final StompAuthInterceptor authInterceptor;
   private final WsSessionRegistry registry;
+  private final com.secretchat.web.BrowserSocketTickets browserTickets;
 
-  public WebSocketConfig(StompAuthInterceptor authInterceptor, WsSessionRegistry registry) {
+  public WebSocketConfig(
+      StompAuthInterceptor authInterceptor,
+      WsSessionRegistry registry,
+      com.secretchat.web.BrowserSocketTickets browserTickets) {
     this.authInterceptor = authInterceptor;
     this.registry = registry;
+    this.browserTickets = browserTickets;
   }
 
   @Override
   public void registerStompEndpoints(StompEndpointRegistry endpoints) {
     endpoints.addEndpoint("/ws");
+    endpoints
+        .addEndpoint("/ws/browser")
+        .addInterceptors(new com.secretchat.web.BrowserSocketHandshake(browserTickets))
+        .setHandshakeHandler(
+            new org.springframework.web.socket.server.support.DefaultHandshakeHandler() {
+              @Override
+              protected java.security.Principal determineUser(
+                  org.springframework.http.server.ServerHttpRequest request,
+                  org.springframework.web.socket.WebSocketHandler handler,
+                  java.util.Map<String, Object> attributes) {
+                return (java.security.Principal)
+                    attributes.get(com.secretchat.web.BrowserSocketHandshake.PRINCIPAL_ATTRIBUTE);
+              }
+            });
   }
 
   @Override

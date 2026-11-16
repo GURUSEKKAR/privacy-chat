@@ -1,7 +1,7 @@
 {
-  "verified_at_utc": "2026-11-16T08:21:05.052389+00:00",
+  "verified_at_utc": "2026-11-16T09:31:26.530160+00:00",
   "totals": {
-    "tests": 47,
+    "tests": 52,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -43,6 +43,13 @@
       "skipped": 0
     },
     {
+      "suite": "com.secretchat.web.BrowserAccessTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "com.secretchat.client.ClientConfigurationTest",
       "tests": 1,
       "failures": 0,
@@ -78,6 +85,13 @@
       "skipped": 0
     },
     {
+      "suite": "com.secretchat.e2e.BrowserInteropTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "com.secretchat.e2e.DeploymentSmokeTest",
       "tests": 1,
       "failures": 0,
@@ -100,12 +114,12 @@
     }
   ],
   "official_passive_client_cases": 21,
-  "build_command": "mvn -o verify spotless:check -Dsecretchat.gui=true -Dsecretchat.keychain.integration=true -Dsecretchat.deployment=true",
+  "build_command": "mvn -o verify spotless:check -Dsecretchat.gui=true -Dsecretchat.keychain.integration=true -Dsecretchat.deployment=true -Dsecretchat.web=true",
   "release_gates": [
     "Independent security review and closure of findings",
     "Organizational threat model sign-off"
   ],
-  "verification_inputs_sha256": "c40798b37d2abcc393b44960d9e7c62f43c7b9ae4c407e81f335385c567e2211",
+  "verification_inputs_sha256": "e13ba32f53b5b8f295847df25e06963ed17cda19d20163acdf81a4a29239e529",
   "maven_launcher_runtime_check": {
     "passed": true,
     "working_directory_contains_spaces": true,

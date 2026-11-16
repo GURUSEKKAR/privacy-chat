@@ -1,0 +1,10 @@
+{
+  "verified_at_utc": "2026-11-16T09:31:26.530160+00:00",
+  "verification_inputs_sha256": "e13ba32f53b5b8f295847df25e06963ed17cda19d20163acdf81a4a29239e529",
+  "passed": true,
+  "tests": 4,
+  "failures": 0,
+  "scope": "Web SDK account/vault/MLS tests and production bundle import resolution; two Java-to-TypeScript interoperability tests are included in test-summary.json",
+  "running_proxy_check": "passed: verified TLS, browser socket ticket, encrypted send and view-once re-entry",
+  "visual_acceptance": "pending: browser access host unavailable"
+}

@@ -29,6 +29,7 @@ public class SecurityConfig {
   }
 
   @Bean
+  @org.springframework.core.annotation.Order(2)
   SecurityFilterChain api(HttpSecurity http, AuthService authService) throws Exception {
     http.csrf(c -> c.disable())
         .httpBasic(b -> b.disable())
@@ -57,6 +58,10 @@ public class SecurityConfig {
                 .permitAll()
                 .requestMatchers("/api/v1/auth/logout", "/api/v1/devices/**")
                 .authenticated()
+                .requestMatchers(HttpMethod.GET, "/ws/browser")
+                .permitAll()
+                .requestMatchers("/api/v1/ws-ticket")
+                .hasAuthority(PrincipalAuthentication.DEVICE_APPROVED)
                 .requestMatchers("/api/v1/rooms/**", "/api/v1/invites/**", "/ws", "/ws/**")
                 .hasAuthority(PrincipalAuthentication.DEVICE_APPROVED)
                 .anyRequest()

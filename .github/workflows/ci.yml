@@ -14,8 +14,17 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web-client/package-lock.json
+      - run: npm ci --prefix web-client --ignore-scripts
+      - run: npm run build --prefix web-client
+      - run: npm test --prefix web-client
+      - run: npm audit --prefix web-client --audit-level=low
       - run: sudo apt-get update && sudo apt-get install -y xvfb libgtk-3-0t64 libxtst6 libxi6
-      - run: xvfb-run -a mvn --batch-mode clean install spotless:check -Dsecretchat.gui=true
+      - run: xvfb-run -a mvn --batch-mode clean install spotless:check -Dsecretchat.gui=true -Dsecretchat.web=true
       - run: mvn --batch-mode com.github.spotbugs:spotbugs-maven-plugin:4.10.5.0:check -Dspotbugs.threshold=High
       - run: python3 scripts/audit-dependencies.py
       - run: sh scripts/prepare-local-tls.sh
@@ -38,4 +47,5 @@ jobs:
             **/target/surefire-reports/
             **/target/gui-evidence/
             docs/verification/dependency-audit.json
+            docs/verification/web-*.json
             docs/verification/container-scan*.json

@@ -1,14 +1,17 @@
 # Secret Chat Room
 
-Java 21, Spring Boot, PostgreSQL and JavaFX implementation of the supplied workflow. The implementation includes device approval, invitations, encrypted live/offline delivery, viewing sessions, expiry, owner-only reset/rekey, desktop recovery and operational checks. Independent security review remains required before advertising production-safe E2EE.
+Java 21, Spring Boot, PostgreSQL, JavaFX and TypeScript browser implementation of the supplied workflow. The implementation includes device approval, invitations, encrypted live/offline delivery, viewing sessions, expiry, owner-only reset/rekey, desktop recovery and operational checks. Independent security review remains required before advertising production-safe E2EE.
 
 ## Build and test
 
-Install JDK 21, Maven 3.9+ and Docker. Start Docker before running:
+Install JDK 21, Maven 3.9+, Node.js 24 and Docker. Start Docker before running:
 
 ```sh
 export JAVA_HOME=$(/usr/libexec/java_home -v 21) # macOS; select JDK 21 on other systems
-mvn clean verify
+npm ci --prefix web-client --ignore-scripts
+npm run build --prefix web-client
+npm test --prefix web-client
+mvn clean verify -Dsecretchat.web=true
 mvn spotless:check
 # Actual desktop acceptance, with an available display:
 mvn verify -Dsecretchat.gui=true
@@ -97,3 +100,21 @@ The macOS app and ZIP appear in `target/desktop`; the source review ZIP and read
 The release checker intentionally fails until source-bound threat-model approval, an independent security report and successful hosted CI are recorded. See [review instructions](docs/release/REVIEW_REQUEST.md) and [implementation audit](docs/release/IMPLEMENTATION_AUDIT.md). Repository: [GURUSEKKAR/privacy-chat](https://github.com/GURUSEKKAR/privacy-chat).
 
 HTTP development binds to loopback. The TLS container explicitly binds its container interface. Forwarded headers are ignored by default; enable them only behind a proxy that strips untrusted forwarding headers. Passwords use Argon2id with 19 MiB memory and two iterations; successful login upgrades older hashes. Authentication challenge and rate-limit storage have bounded capacity and fail closed when full.
+
+## Website
+
+The browser client supports registration, sign-in, device approval, invitations, rooms and MLS-encrypted temporary chat. It uses the same backend and interoperates with desktop clients. Tokens and chat state stay in memory; browser device keys are password-encrypted in local storage. Refreshing the page loses room keys, so the owner must reset the room and invite members again. A browser is a distinct device and needs approval if the account was created elsewhere.
+
+After starting the secure Docker stack, run:
+
+```sh
+npm ci --prefix web-client --ignore-scripts
+npm run build --prefix web-client
+npm run dev --prefix web-client
+```
+
+Open **http://localhost:5173**. The local preview proxies only to the localhost backend, verifies its generated certificate, and binds to loopback. Run `sh scripts/prepare-local-tls.sh` before starting the preview. A rebuilt backend also serves the compiled website at **https://localhost:18443/**; this generated development certificate is not publicly trusted by browsers. Public deployment needs a trusted certificate, domain and hosted backend.
+
+`npm test --prefix web-client` checks password boundaries, encrypted key storage, authenticated messages, tampering, replay and reset isolation. `mvn verify -Dsecretchat.web=true` additionally runs the TypeScript web SDK against the real Java backend and desktop MLS client. Browser UI interaction still needs visual acceptance on target browsers; programmatic SDK tests do not establish visual behavior.
+
+The browser MLS library is ts-mls 1.6.4 (MIT), cipher suite 1. Unsupported optional cipher suites are not exposed. See its upstream security notice; independent review remains a release gate for the expanded browser implementation.
