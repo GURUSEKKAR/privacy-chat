@@ -1,5 +1,5 @@
 {
-  "verified_at_utc": "2026-11-16T09:31:26.530160+00:00",
+  "verified_at_utc": "2026-11-16T09:37:54.598579+00:00",
   "totals": {
     "tests": 52,
     "failures": 0,
@@ -119,7 +119,7 @@
     "Independent security review and closure of findings",
     "Organizational threat model sign-off"
   ],
-  "verification_inputs_sha256": "e13ba32f53b5b8f295847df25e06963ed17cda19d20163acdf81a4a29239e529",
+  "verification_inputs_sha256": "a0641f9f8f7ef0eac37fd2b268a007d0133fc300118f727e7e2b8bc729ac5cac",
   "maven_launcher_runtime_check": {
     "passed": true,
     "working_directory_contains_spaces": true,

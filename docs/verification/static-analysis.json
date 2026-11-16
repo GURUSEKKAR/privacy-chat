@@ -8,5 +8,6 @@
     "desktop-client"
   ],
   "findings": [],
-  "verification_inputs_sha256": "e13ba32f53b5b8f295847df25e06963ed17cda19d20163acdf81a4a29239e529"
+  "verification_inputs_sha256": "a0641f9f8f7ef0eac37fd2b268a007d0133fc300118f727e7e2b8bc729ac5cac",
+  "source_binding_note": "Java source and Maven dependency inputs unchanged since the recorded analysis; npm lockfile completed for cross-platform installation."
 }
