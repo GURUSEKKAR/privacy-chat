@@ -140,7 +140,7 @@
     "Independent security review and closure of findings",
     "Organizational threat model sign-off"
   ],
-  "verification_inputs_sha256": "c0da9f482426dfa931bac179b7537e3b6bb9d0b215d9ec0d03acabd67fdb8694",
+  "verification_inputs_sha256": "a6521a8d5b0e6a2b427dba36a7a3d23065e3bdee3c285c3559709393f78bbf4b",
   "maven_launcher_runtime_check": {
     "passed": true,
     "working_directory_contains_spaces": true,
@@ -174,5 +174,9 @@
     "expired cycle cannot be extended through settings",
     "three browser clients: WebSocket-triggered delivery without timer polling",
     "MLS Remove excludes selected member and retains delivery to remaining member"
-  ]
+  ],
+  "follow_up_validation": {
+    "at_utc": "2026-11-16T21:26:34.059475+00:00",
+    "scope": "Only GUI acceptance reset wait changed after the full suite; targeted GuiAcceptanceTest and Spotless check pass. Production source unchanged."
+  }
 }

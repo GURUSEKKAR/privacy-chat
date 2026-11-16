@@ -1,10 +1,14 @@
 {
   "verified_at_utc": "2026-11-16T21:03:05.774622+00:00",
-  "verification_inputs_sha256": "c0da9f482426dfa931bac179b7537e3b6bb9d0b215d9ec0d03acabd67fdb8694",
+  "verification_inputs_sha256": "a6521a8d5b0e6a2b427dba36a7a3d23065e3bdee3c285c3559709393f78bbf4b",
   "passed": true,
   "tests": 4,
   "failures": 0,
   "scope": "Web SDK account/vault/MLS tests and production bundle import resolution; two Java-to-TypeScript interoperability tests are included in test-summary.json",
   "running_proxy_check": "passed: mandatory authenticator enrollment/confirmation, verified TLS, socket ticket, encrypted send and view-once re-entry",
-  "visual_acceptance": "pending: Terminal/Normal mobile and desktop browser visual checks; browser-control host unavailable"
+  "visual_acceptance": "pending: Terminal/Normal mobile and desktop browser visual checks; browser-control host unavailable",
+  "follow_up_validation": {
+    "at_utc": "2026-11-16T21:26:34.059475+00:00",
+    "scope": "Only GUI acceptance reset wait changed after the full suite; targeted GuiAcceptanceTest and Spotless check pass. Production source unchanged."
+  }
 }

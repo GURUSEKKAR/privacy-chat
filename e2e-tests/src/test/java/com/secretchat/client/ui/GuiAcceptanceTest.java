@@ -234,7 +234,10 @@ class GuiAcceptanceTest extends IntegrationTestBase {
       await(() -> !c.context().client().chat().messages(room.id()).isEmpty());
       snapshot(c, "offline-catchup");
       button(a, "Reset room now");
-      await(() -> a.context().client().members(room.id()).size() == 1);
+      // Membership reads are intentionally blocked until the asynchronous owner rekey completes.
+      await(() ->
+          "ACTIVE".equals(a.context().client().api().room(room.id()).state())
+              && a.context().client().members(room.id()).size() == 1);
       await(() ->
           fx(() ->
               a.stage().getScene().lookup("#rooms") != null
