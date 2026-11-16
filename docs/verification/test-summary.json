@@ -1,5 +1,5 @@
 {
-  "verified_at_utc": "2026-11-16T07:50:41.613222+00:00",
+  "verified_at_utc": "2026-11-16T07:58:11.680856+00:00",
   "totals": {
     "tests": 47,
     "failures": 0,
@@ -105,11 +105,14 @@
     "Independent security review and closure of findings",
     "Organizational threat model sign-off"
   ],
-  "verification_inputs_sha256": "a8d2f52a3837775704a68a800c46c29de0495931592ad880b438ddb865594274",
+  "verification_inputs_sha256": "9614aacbf5ab83bc62ad8dec3e41871cf38e072de6c0e5c5cf76e32b55b310c4",
   "maven_launcher_runtime_check": {
     "passed": true,
     "working_directory_contains_spaces": true,
     "screens_loaded": 3,
-    "crypto_verified": true
+    "crypto_verified": true,
+    "https_health_status": 200,
+    "tls_protocol": "TLSv1.3",
+    "truststore_path": ".local/tls/truststore.p12"
   }
 }

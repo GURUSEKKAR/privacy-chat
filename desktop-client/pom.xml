@@ -75,9 +75,10 @@
         <version>${javafx-maven-plugin.version}</version>
         <configuration>
           <mainClass>${secretchat.client.main}</mainClass>
+          <workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
           <options>
             <option>-Dsecretchat.server=${secretchat.server}</option>
-            <option>-Dsecretchat.dataDir=&quot;${secretchat.dataDir}&quot;</option>
+            <option>-Dsecretchat.dataDir=${secretchat.dataDir}</option>
           </options>
         </configuration>
       </plugin>
@@ -91,8 +92,8 @@
         <groupId>org.openjfx</groupId><artifactId>javafx-maven-plugin</artifactId>
         <configuration><options>
           <option>-Dsecretchat.server=${secretchat.server}</option>
-          <option>-Dsecretchat.dataDir=&quot;${secretchat.dataDir}&quot;</option>
-          <option>-Djavax.net.ssl.trustStore=&quot;${maven.multiModuleProjectDirectory}/.local/tls/truststore.p12&quot;</option>
+          <option>-Dsecretchat.dataDir=${secretchat.dataDir}</option>
+          <option>-Djavax.net.ssl.trustStore=.local/tls/truststore.p12</option>
           <option>-Djavax.net.ssl.trustStorePassword=changeit</option>
         </options></configuration>
       </plugin></plugins></build>
