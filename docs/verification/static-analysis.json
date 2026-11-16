@@ -1,16 +1,12 @@
 {
   "tool": "SpotBugs Maven plugin 4.10.5.0",
   "threshold": "High priority",
-  "verified_at_utc": "2026-11-16T21:03:05.774622+00:00",
+  "verified_at_utc": "2026-11-16T21:57:07.915407+00:00",
   "analyzed_modules": [
     "backend",
     "protocol-contracts",
     "desktop-client"
   ],
   "findings": [],
-  "verification_inputs_sha256": "a6521a8d5b0e6a2b427dba36a7a3d23065e3bdee3c285c3559709393f78bbf4b",
-  "follow_up_validation": {
-    "at_utc": "2026-11-16T21:26:34.059475+00:00",
-    "scope": "Only GUI acceptance reset wait changed after the full suite; targeted GuiAcceptanceTest and Spotless check pass. Production source unchanged."
-  }
+  "verification_inputs_sha256": "bc9d941192684877761a6cd66538dd97c032b3dafaf370415196de1bac23c7a5"
 }

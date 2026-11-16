@@ -139,6 +139,9 @@ const operations = {
   async reset(p) {
     await client.reset(await client.api.call("/api/v1/rooms/" + p.room));
   },
+  async serverReset(p) {
+    return client.api.call("/api/v1/rooms/" + p.room + "/reset", "POST");
+  },
   async stop() {
     await client?.logout();
     await server.close();

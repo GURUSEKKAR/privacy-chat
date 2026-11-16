@@ -246,6 +246,10 @@ export class ChatClient {
     await this.leave();
     await this.connect();
     room = await this.api.call<Room>("/api/v1/rooms/" + room.id);
+    if (room.state === "LOCKED_PENDING_REKEY" && room.myRole === "OWNER") {
+      await this.finishReset(room);
+      room = await this.api.call<Room>("/api/v1/rooms/" + room.id);
+    }
     if (room.state !== "ACTIVE")
       throw new Error(
         "The owner must reset/rekey this room before it can be entered.",
@@ -461,8 +465,22 @@ export class ChatClient {
   }
   async reset(room: Room) {
     await this.leave();
-    await this.api.call("/api/v1/rooms/" + room.id + "/reset", "POST");
-    room = await this.api.call("/api/v1/rooms/" + room.id);
+    room = await this.api.call<Room>("/api/v1/rooms/" + room.id);
+    if (room.state === "ACTIVE") {
+      try {
+        await this.api.call("/api/v1/rooms/" + room.id + "/reset", "POST");
+      } catch (error) {
+        // The timer may reset the room between our GET and POST.
+        const current = await this.api.call<Room>("/api/v1/rooms/" + room.id);
+        if (current.state !== "LOCKED_PENDING_REKEY") throw error;
+      }
+      room = await this.api.call<Room>("/api/v1/rooms/" + room.id);
+    }
+    await this.finishReset(room);
+  }
+  private async finishReset(room: Room) {
+    if (room.myRole !== "OWNER" || room.state !== "LOCKED_PENDING_REKEY")
+      throw new Error("Only the owner can finish a pending room reset.");
     this.mls!.groups.delete(room.id);
     await this.mls!.create(room.id);
     await this.api.call("/api/v1/rooms/" + room.id + "/mls/commit", "POST", {

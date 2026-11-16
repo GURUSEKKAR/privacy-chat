@@ -1,5 +1,5 @@
 {
-  "verified_at_utc": "2026-11-16T21:03:05.774622+00:00",
+  "verified_at_utc": "2026-11-16T21:57:07.915407+00:00",
   "totals": {
     "tests": 64,
     "failures": 0,
@@ -24,48 +24,6 @@
     {
       "suite": "com.secretchat.auth.TotpTest",
       "tests": 2,
-      "failures": 0,
-      "errors": 0,
-      "skipped": 0
-    },
-    {
-      "suite": "com.secretchat.common.BoundedAuthenticationStateTest",
-      "tests": 2,
-      "failures": 0,
-      "errors": 0,
-      "skipped": 0
-    },
-    {
-      "suite": "com.secretchat.expiry.OperationsTest",
-      "tests": 2,
-      "failures": 0,
-      "errors": 0,
-      "skipped": 0
-    },
-    {
-      "suite": "com.secretchat.messages.AdversarialLifecycleTest",
-      "tests": 9,
-      "failures": 0,
-      "errors": 0,
-      "skipped": 0
-    },
-    {
-      "suite": "com.secretchat.messages.MessageLifecycleIntegrationTest",
-      "tests": 4,
-      "failures": 0,
-      "errors": 0,
-      "skipped": 0
-    },
-    {
-      "suite": "com.secretchat.rooms.RoomSettingsTest",
-      "tests": 2,
-      "failures": 0,
-      "errors": 0,
-      "skipped": 0
-    },
-    {
-      "suite": "com.secretchat.web.BrowserAccessTest",
-      "tests": 3,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -106,6 +64,13 @@
       "skipped": 0
     },
     {
+      "suite": "com.secretchat.common.BoundedAuthenticationStateTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "com.secretchat.e2e.BrowserInteropTest",
       "tests": 3,
       "failures": 0,
@@ -132,15 +97,50 @@
       "failures": 0,
       "errors": 0,
       "skipped": 0
+    },
+    {
+      "suite": "com.secretchat.expiry.OperationsTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.secretchat.messages.AdversarialLifecycleTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.secretchat.messages.MessageLifecycleIntegrationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.secretchat.rooms.RoomSettingsTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.secretchat.web.BrowserAccessTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
     }
   ],
   "official_passive_client_cases": 21,
-  "build_command": "mvn verify spotless:check -Dsecretchat.gui=true -Dsecretchat.web=true -Dsecretchat.keychain.integration=true -Dsecretchat.deployment=true",
+  "build_command": "mvn install spotless:check -Dsecretchat.gui=true -Dsecretchat.web=true; targeted LocalVaultTest with -Dsecretchat.keychain.integration=true; rebuilt TLS container and DeploymentSmokeTest with -Dsecretchat.deployment=true",
   "release_gates": [
     "Independent security review and closure of findings",
     "Organizational threat model sign-off"
   ],
-  "verification_inputs_sha256": "a6521a8d5b0e6a2b427dba36a7a3d23065e3bdee3c285c3559709393f78bbf4b",
+  "verification_inputs_sha256": "bc9d941192684877761a6cd66538dd97c032b3dafaf370415196de1bac23c7a5",
   "maven_launcher_runtime_check": {
     "passed": true,
     "working_directory_contains_spaces": true,
@@ -173,10 +173,9 @@
     "members cannot change settings",
     "expired cycle cannot be extended through settings",
     "three browser clients: WebSocket-triggered delivery without timer polling",
-    "MLS Remove excludes selected member and retains delivery to remaining member"
-  ],
-  "follow_up_validation": {
-    "at_utc": "2026-11-16T21:26:34.059475+00:00",
-    "scope": "Only GUI acceptance reset wait changed after the full suite; targeted GuiAcceptanceTest and Spotless check pass. Production source unchanged."
-  }
+    "MLS Remove excludes selected member and retains delivery to remaining member",
+    "settings save during expired and locked cycles without reopening access",
+    "owner entry completes pending rekey",
+    "explicit Reset room recovers an already locked room"
+  ]
 }

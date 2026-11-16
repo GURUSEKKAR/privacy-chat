@@ -92,7 +92,6 @@ public class RoomService {
   public RoomView update(
       AuthPrincipal p, UUID roomId, com.secretchat.protocol.RoomDtos.UpdateRoomRequest req) {
     var a = access.requireOwner(p, roomId, true);
-    RoomAccess.requireRoomActive(a.room(), clock.instant());
     if (req.name() == null || req.name().isBlank() || req.name().trim().length() > 80)
       throw ApiException.badRequest("INVALID_NAME", "Group name must contain 1–80 characters.");
     String password = req.roomPassword();

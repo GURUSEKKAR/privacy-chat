@@ -224,6 +224,35 @@ class BrowserInteropTest extends IntegrationTestBase {
       owner.call(Map.of("command", "send", "text", "Remaining member only"));
       retained.call(Map.of("command", "waitMessage", "text", "Remaining member only"));
       assertThat(removed.call(Map.of("command", "rooms")).size()).isZero();
+      // A timer/server reset can happen while the owner has the settings dialog open.
+      owner.call(Map.of("command", "serverReset", "room", id));
+      var lockedSettings =
+          owner.call(
+              Map.of(
+                  "command",
+                  "settings",
+                  "room",
+                  id,
+                  "settings",
+                  Map.of(
+                      "name",
+                      "Saved during reset",
+                      "messageTtlSeconds",
+                      60,
+                      "resetIntervalSeconds",
+                      600,
+                      "changePassword",
+                      true,
+                      "roomPassword",
+                      "new-room-password")));
+      assertThat(lockedSettings.get("state").asString()).isEqualTo("LOCKED_PENDING_REKEY");
+      assertThat(lockedSettings.get("name").asString()).isEqualTo("Saved during reset");
+      owner.call(Map.of("command", "enter", "room", id, "password", "new-room-password"));
+      owner.call(Map.of("command", "send", "text", "Recovered pending reset"));
+      owner.call(Map.of("command", "serverReset", "room", id));
+      owner.call(Map.of("command", "reset", "room", id));
+      owner.call(Map.of("command", "enter", "room", id, "password", "new-room-password"));
+      owner.call(Map.of("command", "send", "text", "Explicit reset also recovers"));
     }
   }
 }

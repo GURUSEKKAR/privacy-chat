@@ -7,6 +7,9 @@ import type { Room, Invite, Member, Device } from "./types";
 let theme: Theme = readTheme(localStorage);
 function applyTheme() {
   document.documentElement.dataset.theme = theme;
+  const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  if (icon)
+    icon.href = theme === "terminal" ? "/favicon.svg" : "/favicon-normal.svg";
   document
     .querySelectorAll<HTMLButtonElement>("[data-theme-toggle]")
     .forEach((button) => {
@@ -61,7 +64,7 @@ const h = (value: unknown) =>
       ]!,
   );
 const brand =
-  '<div class="brand"><span class="brand-mark" aria-hidden="true">&gt;_</span><span>Null<small>Nothing stays forever.</small></span></div><button type="button" data-theme-toggle>Theme</button>';
+  '<div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="5"><circle cx="32" cy="32" r="23"/><path d="M8 56 56 8"/></svg></span><span>Null<small>Nothing stays forever.</small></span></div><button type="button" data-theme-toggle>Theme</button>';
 function status(message: string) {
   const node = document.querySelector<HTMLElement>("#auth-status,#app-status");
   if (node) node.textContent = message;
@@ -748,7 +751,7 @@ async function joinGroup() {
 async function groupSettings(room: Room) {
   formDialog(
     "Group settings",
-    `<label>Group name<input name="name" maxlength="80" required value="${h(room.name || room.displayCode)}"></label><label>Message lifetime (minutes)<input name="ttl" type="number" min="1" max="1440" required step="any" value="${room.messageTtlSeconds / 60}"></label><label>Room reset interval (minutes)<input name="reset" type="number" min="1" max="10080" required step="any" value="${room.resetIntervalSeconds / 60}"></label><label>Password<select name="passwordAction"><option value="keep">Keep current password setting</option><option value="set">Set a new password</option><option value="remove">Remove password</option></select></label><label>New password (only when setting a new password)<input name="password" type="password" minlength="8" maxlength="128" autocomplete="new-password"></label><p>Message lifetime applies to new messages. Changing the reset interval starts a new countdown from now; it does not delete messages or remove members. Password changes affect future group entry.</p>`,
+    `<label>Group name<input name="name" maxlength="80" required value="${h(room.name || room.displayCode)}"></label><label>Message lifetime (minutes)<input name="ttl" type="number" min="1" max="1440" required step="any" value="${room.messageTtlSeconds / 60}"></label><label>Room reset interval (minutes)<input name="reset" type="number" min="1" max="10080" required step="any" value="${room.resetIntervalSeconds / 60}"></label><label>Password<select name="passwordAction"><option value="keep">Keep current password setting</option><option value="set">Set a new password</option><option value="remove">Remove password</option></select></label><label>New password (only when setting a new password)<input name="password" type="password" minlength="8" maxlength="128" autocomplete="new-password"></label><p>Message lifetime applies to new messages. Changing the reset interval starts a new countdown for an active, unexpired room. If a reset is pending, these settings apply when the owner reopens the room to finish it. Password changes affect future group entry.</p>`,
     async (data) => {
       const passwordAction = String(data.get("passwordAction"));
       const password = String(data.get("password") || "");

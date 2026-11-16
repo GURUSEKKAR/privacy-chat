@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 class RoomSettingsTest extends IntegrationTestBase {
   @Autowired RoomPasswords passwords;
+  @Autowired com.secretchat.expiry.ResetService resets;
 
   @Test
   void ownerCanRenameChangeScheduleAndChangeOrRemovePassword() {
@@ -50,7 +51,7 @@ class RoomSettingsTest extends IntegrationTestBase {
   }
 
   @Test
-  void membersCannotChangeSettingsAndExpiredCycleCannotBeExtended() {
+  void ownerCanEditLockedOrExpiredSettingsWithoutReopeningCycleAndMembersCannot() {
     var owner = register("settingsowner");
     var member = register("settingsmember");
     var r = createRoom(owner, 600, 3600, null);
@@ -60,7 +61,24 @@ class RoomSettingsTest extends IntegrationTestBase {
         .isInstanceOf(ApiException.class);
     assertThat(rooms.get(owner.principal(), r.id()).messageTtlSeconds()).isEqualTo(600);
     clock.advance(Duration.ofSeconds(3601));
-    assertThatThrownBy(() -> rooms.update(owner.principal(), r.id(), update))
+    var expired = rooms.update(owner.principal(), r.id(), update);
+    assertThat(expired.name()).isEqualTo("Unauthorized");
+    assertThat(expired.nextResetAt()).isEqualTo(r.nextResetAt());
+    assertThatThrownBy(() ->
+            RoomAccess.requireRoomActive(roomRepo.findById(r.id()).orElseThrow(), clock.instant()))
         .isInstanceOf(ApiException.class);
+    resets.resetNow(owner.principal(), r.id());
+    var locked = rooms.get(owner.principal(), r.id());
+    var saved =
+        rooms.update(
+            owner.principal(),
+            r.id(),
+            new UpdateRoomRequest("Saved while locked", 60, 600, true, "changed-password"));
+    assertThat(saved.name()).isEqualTo("Saved while locked");
+    assertThat(saved.passwordProtected()).isTrue();
+    assertThat(saved.state()).isEqualTo("LOCKED_PENDING_REKEY");
+    assertThat(saved.generation()).isEqualTo(locked.generation());
+    assertThat(saved.mlsEpoch()).isEqualTo(locked.mlsEpoch());
+    assertThat(saved.nextResetAt()).isEqualTo(locked.nextResetAt());
   }
 }

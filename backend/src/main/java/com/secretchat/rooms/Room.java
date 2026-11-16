@@ -133,7 +133,8 @@ public class Room {
     this.messageTtlSeconds = ttl;
     if (this.resetIntervalSeconds != interval) {
       this.resetIntervalSeconds = interval;
-      scheduleNextReset(now);
+      // Settings must not reopen an expired cycle or complete a pending cryptographic rekey.
+      if (state == RoomState.ACTIVE && now.isBefore(nextResetAt)) scheduleNextReset(now);
     }
     if (changePassword) this.passwordHash = hash;
   }
