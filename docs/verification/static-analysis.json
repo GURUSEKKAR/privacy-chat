@@ -1,0 +1,12 @@
+{
+  "tool": "SpotBugs Maven plugin 4.10.5.0",
+  "threshold": "High priority",
+  "verified_at_utc": "2026-11-16T07:07:05.260781+00:00",
+  "analyzed_modules": [
+    "backend",
+    "protocol-contracts",
+    "desktop-client"
+  ],
+  "findings": [],
+  "verification_inputs_sha256": "edc5f2a99cb15b8b1e419ddc6281c76b57c4f096781063b935eecc3a5a778c26"
+}

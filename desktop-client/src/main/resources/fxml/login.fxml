@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns:fx="http://javafx.com/fxml" fx:controller="com.secretchat.client.ui.LoginController"
+      spacing="10" maxWidth="420">
+  <padding><Insets top="40" left="40" right="40" bottom="40"/></padding>
+  <Label text="Secret Chat Room" style="-fx-font-size: 22px; -fx-font-weight: bold;"/>
+  <Label text="Username"/>
+  <TextField fx:id="username" promptText="3-32 chars: a-z 0-9 _ . -"/>
+  <Label text="Password"/>
+  <PasswordField fx:id="password" promptText="at least 12 characters"/>
+  <Label text="Device name (used when enrolling this computer)"/>
+  <TextField fx:id="deviceName"/>
+  <HBox spacing="10">
+    <Button text="Sign in" defaultButton="true" onAction="#onLogin"/>
+    <Button text="Create account" onAction="#onRegister"/>
+    <Button text="Check approval" onAction="#onCheckApproval"/>
+  </HBox>
+  <Label fx:id="status" wrapText="true"/>
+  <Label wrapText="true" style="-fx-text-fill: #777;"
+         text="Messages are end-to-end encrypted on this device and kept in memory only. Recipients can still screenshot or copy what they see."/>
+</VBox>

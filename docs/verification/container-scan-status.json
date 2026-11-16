@@ -1,0 +1,21 @@
+{
+  "checked_at_utc": "2026-11-16T06:04:35.384771+00:00",
+  "status": "passed",
+  "scanner": "aquasec/trivy:0.76.2",
+  "scope": "OS packages from offline-scanned image; final rebuild has identical OS/base layers and a changed application layer; Java dependencies audited separately with OSV",
+  "image": "secretchat-acceptance-backend",
+  "network_during_private_image_scan": "none",
+  "high_critical_findings": 0,
+  "final_image_os_base_layers_match": true,
+  "final_image_layers": [
+    "sha256:82881da986b65e966fc8e5b188d6f77319708e9dd562cf737320bb977a0cf69c",
+    "sha256:60777d6993de0b528f7aeb99530a1e67283666bc5224b46a8df4bcb2f9703512",
+    "sha256:cb9bb509b2eda9fa4174ff60fe0ad935aadb39511b1a71de5dd09d93baae7cf4",
+    "sha256:9097fe56504e241fb2ed1be92d292e501a9345ac5fabfa2188c39799ad6f0385",
+    "sha256:d2119ffdadb538eb32cd478c4a7097468f04a90fe63e00c54d31c4d4de4834f2",
+    "sha256:3cd01e4b230365e568fc5338fa96416f7f37f29ab83f82606aa5ff4db3ae14e2",
+    "sha256:d2bc76df5b9497966556104f5edbd4162d56693684a8b1c76f6fa379559ce40f",
+    "sha256:ea0e2027295047918c78babada5d96c74dd1a737288776430adc62f2ce428767"
+  ],
+  "base_layers_compared_at_utc": "2026-11-16T07:07:05.260781+00:00"
+}

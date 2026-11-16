@@ -1,0 +1,15 @@
+target/
+.env
+*.iml
+.idea/
+.vscode/
+.DS_Store
+# Client vaults must never be committed.
+.secretchat/
+.local/
+*.pem
+*.p12
+*.dump
+*.dump.age
+__pycache__/
+*.pyc

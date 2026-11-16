@@ -1,0 +1,19 @@
+{
+  "source_sha256": "COPY_FROM_SOURCE_MANIFEST_AFTER_REVIEW",
+  "threat_model": {
+    "decision": "pending",
+    "approver": "",
+    "approved_at": ""
+  },
+  "independent_security_review": {
+    "decision": "pending",
+    "reviewer": "",
+    "reviewed_at": "",
+    "report_path": "",
+    "report_sha256": "",
+    "open_critical_high_findings": null
+  },
+  "hosted_ci": {
+    "run_id": null
+  }
+}

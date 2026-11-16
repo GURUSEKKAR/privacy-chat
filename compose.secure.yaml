@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: secretchat
+      POSTGRES_USER: secretchat
+      POSTGRES_PASSWORD: ${SECRETCHAT_DB_PASSWORD:?run scripts/prepare-local-tls.sh}
+    command: ["postgres", "-c", "archive_mode=off", "-c", "wal_keep_size=0", "-c", "max_replication_slots=0", "-c", "log_statement=none", "-c", "max_wal_size=256MB"]
+    volumes:
+      - secure-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U secretchat -d secretchat"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  backend:
+    build: .
+    environment:
+      SPRING_PROFILES_ACTIVE: tls
+      SECRETCHAT_DB_URL: jdbc:postgresql://postgres:5432/secretchat
+      SECRETCHAT_DB_USER: secretchat
+      SECRETCHAT_DB_PASSWORD: ${SECRETCHAT_DB_PASSWORD}
+      SECRETCHAT_TLS_PASSWORD: ${SECRETCHAT_TLS_PASSWORD}
+      SECRETCHAT_METRICS_TOKEN: ${SECRETCHAT_METRICS_TOKEN}
+    volumes:
+      - ./.local/tls/server.p12:/run/tls/server.p12:ro
+    ports:
+      - "127.0.0.1:${SECRETCHAT_TLS_PORT:-18443}:8443"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+volumes:
+  secure-pgdata:

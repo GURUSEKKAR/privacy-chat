@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: secret-chat-backend
+  datasource:
+    url: ${SECRETCHAT_DB_URL:jdbc:postgresql://localhost:5432/secretchat}
+    username: ${SECRETCHAT_DB_USER:secretchat}
+    # No default password: provide it via environment / secret manager.
+    password: ${SECRETCHAT_DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jackson:
+    time-zone: UTC
+
+server:
+  address: 127.0.0.1
+  port: ${PORT:8080}
+  # Direct TLS is the default. Enable forwarded headers only behind a trusted, sanitizing proxy.
+  forward-headers-strategy: none
+  error:
+    include-message: never
+    include-stacktrace: never
+  tomcat:
+    max-http-form-post-size: 64KB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+logging:
+  level:
+    root: INFO
+    # Never log request bodies, SQL parameters or STOMP payloads (ciphertext, tokens).
+    org.hibernate.orm.jdbc.bind: OFF
+    org.springframework.web.socket: WARN
+    org.springframework.messaging: WARN
+
+secretchat:
+  access-token-ttl: 15m
+  refresh-token-ttl: 7d
+  invitation-ttl: 24h
+  max-room-members: 16
+  deleted-metadata-retention: 0s

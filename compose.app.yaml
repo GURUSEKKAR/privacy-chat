@@ -1,0 +1,15 @@
+# Build first with mvn clean verify, then:
+# docker compose -f compose.yaml -f compose.app.yaml up --build -d
+services:
+  backend:
+    build: .
+    environment:
+      SERVER_ADDRESS: 0.0.0.0
+      SECRETCHAT_DB_URL: jdbc:postgresql://postgres:5432/secretchat
+      SECRETCHAT_DB_USER: ${SECRETCHAT_DB_USER:-secretchat}
+      SECRETCHAT_DB_PASSWORD: ${SECRETCHAT_DB_PASSWORD:?set SECRETCHAT_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy

@@ -1,0 +1,22 @@
+# Local development database. Usage:
+#   cp .env.example .env   # then set SECRETCHAT_DB_PASSWORD
+#   docker compose up -d postgres
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: secretchat
+      POSTGRES_USER: ${SECRETCHAT_DB_USER:-secretchat}
+      POSTGRES_PASSWORD: ${SECRETCHAT_DB_PASSWORD:?set SECRETCHAT_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d secretchat"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:

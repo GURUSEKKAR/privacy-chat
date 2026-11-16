@@ -1,0 +1,8 @@
+secretchat:
+  worker:
+    # Workers are invoked explicitly by tests (runOnce) for determinism.
+    initial-delay-ms: 3600000
+    expiry-delay-ms: 3600000
+    reset-delay-ms: 3600000
+  registrations-per-window: 1000
+  sends-per-window: 1000

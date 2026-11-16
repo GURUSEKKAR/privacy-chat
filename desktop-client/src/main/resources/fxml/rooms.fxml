@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.secretchat.client.ui.RoomsController">
+  <padding><Insets top="12" left="12" right="12" bottom="12"/></padding>
+  <top>
+    <HBox spacing="10">
+      <Label fx:id="whoami"/>
+      <Button text="Refresh" onAction="#onRefresh"/>
+    </HBox>
+  </top>
+  <center>
+    <VBox spacing="6">
+      <Label text="My rooms"/>
+      <ListView fx:id="rooms" VBox.vgrow="ALWAYS"/>
+      <HBox spacing="8">
+        <Button text="Enter room" onAction="#onEnter"/>
+        <TextField fx:id="inviteUsername" promptText="username to invite"/>
+        <Button text="Invite" onAction="#onInvite"/>
+        <Button text="Add accepted members" onAction="#onAddAccepted"/>
+      </HBox>
+      <Button text="Reset selected room" onAction="#onResetSelected"/>
+      <TitledPane text="Create room" expanded="false">
+        <GridPane hgap="8" vgap="8">
+          <Label text="Room code" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+          <TextField fx:id="newRoomCode" promptText="optional" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+          <Label text="Room password" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+          <PasswordField fx:id="newRoomPassword" promptText="optional" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+          <Label text="Message TTL in minutes" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+          <Spinner fx:id="ttlMinutes" min="1" max="1440" initialValue="10" editable="true" prefWidth="100" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+          <Label text="Member reset in minutes" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+          <Spinner fx:id="resetMinutes" min="1" max="10080" initialValue="60" editable="true" prefWidth="100" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+          <Button text="Create" onAction="#onCreateRoom" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+        </GridPane>
+      </TitledPane>
+    </VBox>
+  </center>
+  <right>
+    <VBox spacing="6" prefWidth="320">
+      <padding><Insets left="12"/></padding>
+      <Label text="Invitations"/>
+      <ListView fx:id="invitations" prefHeight="180"/>
+      <Button text="Accept selected" onAction="#onAccept"/>
+      <Label text="My devices"/>
+      <ListView fx:id="devices" prefHeight="180"/>
+      <Button text="Approve selected device" onAction="#onApproveDevice"/>
+      <Button text="Revoke selected device" onAction="#onRevokeDevice"/>
+    </VBox>
+  </right>
+</BorderPane>

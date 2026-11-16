@@ -1,0 +1,14 @@
+server:
+  address: 0.0.0.0
+  port: 8443
+  ssl:
+    enabled: true
+    key-store: ${SECRETCHAT_TLS_KEYSTORE:file:/run/tls/server.p12}
+    key-store-type: PKCS12
+    key-store-password: ${SECRETCHAT_TLS_PASSWORD}
+    enabled-protocols: TLSv1.3
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
