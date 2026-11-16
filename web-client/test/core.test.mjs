@@ -16,7 +16,8 @@ const server = await createServer({
 after(() => server.close());
 const { validateAccount, utf8, b64 } =
   await server.ssrLoadModule("/src/bytes.ts");
-const { Mls, suiteReady } = await server.ssrLoadModule("/src/mls.ts");
+const { Mls, suiteReady, FingerprintChangedError } =
+  await server.ssrLoadModule("/src/mls.ts");
 const { loadIdentity, saveIdentity } =
   await server.ssrLoadModule("/src/vault.ts");
 test("account validation accepts exactly 12 characters and rejects 11", () => {
@@ -29,6 +30,26 @@ test("account validation accepts exactly 12 characters and rejects 11", () => {
     validateAccount("guru.r.c", "oldpassword", "browser", false),
     null,
   );
+});
+test("changed member keys stay blocked until explicit review, with stale review rejected", async () => {
+  const cs = await suiteReady;
+  const mls = new Mls(await cs.signature.keygen(), crypto.randomUUID());
+  const previous = Array(10).fill("AAAA").join(" ");
+  const current = Array(10).fill("BBBB").join(" ");
+  await mls.pin("member", previous);
+  await assert.rejects(mls.pin("member", current), FingerprintChangedError);
+  assert.equal(mls.pins.get("member"), previous);
+  await assert.rejects(
+    mls.trustChangedFingerprint("member", current, previous),
+  );
+  await assert.rejects(
+    mls.trustChangedFingerprint("member", previous, "invalid"),
+  );
+  assert.equal(mls.pins.get("member"), previous);
+  await mls.trustChangedFingerprint("member", previous, current);
+  await mls.pin("member", current);
+  const restored = new Mls(mls.identity, mls.userId);
+  assert.equal(restored.pins.get("member"), current);
 });
 test("browser vault rejects wrong passwords without changing encrypted storage", async () => {
   const cs = await suiteReady,

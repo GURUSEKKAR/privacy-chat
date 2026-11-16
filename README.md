@@ -171,3 +171,7 @@ Selecting a locked room as its owner finishes the pending encryption-key setup. 
 ### Deleting all test accounts
 
 `scripts/delete-all-users.sql` is a manual, irreversible PostgreSQL operation for clearing the application database. Run it with `psql` against the intended database only; it removes all users and their dependent groups, messages, devices, sessions and authenticator enrollments while keeping the schema and Flyway history. It is never run by deployments. Restart the backend afterward to close existing socket connections.
+
+### Accepted invitations and changed devices
+
+Accepting an invitation creates a pending membership; the room shows Waiting for owner until its owner selects Add accepted members. If a member has a different device key from the owner’s saved fingerprint, the owner gets a review dialog with old/current fingerprints. Compare the current value with the member through a trusted channel, using Devices on their browser, then explicitly confirm Trust verified device & add member. Cancel leaves the key blocked. The reviewed invitation is checked again before trusting; stale reviews are rejected. Selecting a room fetches current membership so a newly approved member can enter immediately.

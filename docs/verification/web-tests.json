@@ -1,14 +1,14 @@
 {
-  "verified_at_utc": "2026-11-16T21:57:07.915407+00:00",
-  "verification_inputs_sha256": "874e840999cd28fad6c560cbee5f95b033daab7446d3beb5ba4bf983ec03d265",
+  "verified_at_utc": "2026-11-16T22:18:05.080909+00:00",
+  "verification_inputs_sha256": "ef05de5da47882c2cd9f6e437bf54acbacb6a5c233388fb689b55abb12210819",
   "passed": true,
-  "tests": 4,
+  "tests": 5,
   "failures": 0,
   "scope": "Web SDK account/vault/MLS tests and production bundle import resolution; two Java-to-TypeScript interoperability tests are included in test-summary.json",
   "running_proxy_check": "passed: mandatory authenticator enrollment/confirmation, verified TLS, socket ticket, encrypted send and view-once re-entry",
   "visual_acceptance": "pending: Terminal/Normal mobile and desktop browser visual checks; browser-control host unavailable",
   "follow_up_validation": {
-    "at_utc": "2026-11-16T22:00:08.193406+00:00",
-    "scope": "Only the settings test clock changed after the full suite; targeted RoomSettingsTest and Spotless pass. Production code unchanged."
+    "at_utc": "2026-11-16T22:18:05.080909+00:00",
+    "scope": "Java production source unchanged; all three BrowserInteropTest cases and Spotless pass against updated web SDK. Production web build and five Node tests pass; changed-key rejection, explicit fingerprint replacement, stale review rejection and pending membership are covered."
   }
 }

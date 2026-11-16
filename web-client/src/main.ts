@@ -2,6 +2,7 @@ import "./style.css";
 import { readTheme, storeTheme, type Theme } from "./theme";
 import QRCode from "qrcode";
 import { ChatClient, type Displayed } from "./client";
+import { FingerprintChangedError } from "./mls";
 import { validateAccount } from "./bytes";
 import type { Room, Invite, Member, Device } from "./types";
 let theme: Theme = readTheme(localStorage);
@@ -229,7 +230,7 @@ async function refreshLists() {
     for (const r of allRooms) {
       const button = document.createElement("button");
       button.className = "room-card" + (selected?.id === r.id ? " active" : "");
-      button.innerHTML = `<strong>${h(r.name || r.displayCode || r.id.slice(0, 8))}</strong><small>${h(r.myRole === "OWNER" ? "Owner" : "Member")} · ${h(r.state === "ACTIVE" ? "Ready" : r.state.replaceAll("_", " ").toLowerCase())}</small>`;
+      button.innerHTML = `<strong>${h(r.name || r.displayCode || r.id.slice(0, 8))}</strong><small>${h(r.myRole === "OWNER" ? "Owner" : "Member")} · ${h(r.myMembershipState === "PENDING_KEYS" ? "Waiting for owner" : r.state === "ACTIVE" ? "Ready" : r.state.replaceAll("_", " ").toLowerCase())}</small>`;
       button.onclick = () => void action(button, async () => choose(r));
       container.append(button);
     }
@@ -270,6 +271,13 @@ async function refreshLists() {
   }
 }
 async function choose(room: Room) {
+  room = await client.api.call<Room>(`/api/v1/rooms/${room.id}`);
+  if (room.myMembershipState === "PENDING_KEYS") {
+    status(
+      "Your invitation is accepted. Ask the owner to select Add accepted members and complete any fingerprint review. You can enter once your membership is ready.",
+    );
+    return;
+  }
   if (selected?.id === room.id && client.sessionId) return;
   const enter = async (password: string | null) => {
     selected = room;
@@ -423,9 +431,7 @@ async function renderDetails() {
       ),
     );
     bind("add-members", async () => {
-      await client.addAccepted(room);
-      await refreshLists();
-      status("Accepted members added with fresh MLS keys.");
+      await addAcceptedMembers(room);
     });
     bind("reset", async () =>
       formDialog(
@@ -440,6 +446,54 @@ async function renderDetails() {
         },
         "Reset room",
       ),
+    );
+  }
+}
+async function addAcceptedMembers(room: Room) {
+  try {
+    await client.addAccepted(room);
+    await refreshLists();
+    status("Accepted members added. They can now select the group to enter.");
+  } catch (error) {
+    if (!(error instanceof FingerprintChangedError)) throw error;
+    const invites = await client.api.call<Invite[]>(
+      `/api/v1/rooms/${room.id}/invites`,
+    );
+    const invite = invites.find(
+      (i) => i.inviteeUserId === error.userId && i.status === "ACCEPTED",
+    );
+    if (!invite || invite.acceptedDeviceFingerprint !== error.current)
+      throw new Error("Invitation changed. Refresh and review again.");
+    formDialog(
+      "Review member’s new device",
+      `<p>${h(invite.inviteeUsername)} is using a different device key. Ask them to open Devices and compare their current fingerprint through a trusted channel.</p><p>Previously saved fingerprint</p><p class="fingerprint">${h(error.previous)}</p><p>Current fingerprint</p><p class="fingerprint">${h(error.current)}</p><label><input type="checkbox" name="verified" value="yes" required> I compared the current fingerprint with ${h(invite.inviteeUsername)} and it matches.</label>`,
+      async (data) => {
+        if (data.get("verified") !== "yes")
+          throw new Error(
+            "Verify the fingerprint before approving the changed key.",
+          );
+        const latest = await client.api.call<Invite[]>(
+          `/api/v1/rooms/${room.id}/invites`,
+        );
+        if (
+          !latest.some(
+            (i) =>
+              i.id === invite.id &&
+              i.status === "ACCEPTED" &&
+              i.acceptedDeviceFingerprint === error.current,
+          )
+        )
+          throw new Error(
+            "Invitation changed during review. Refresh and try again.",
+          );
+        await client.mls!.trustChangedFingerprint(
+          error.userId,
+          error.previous,
+          error.current,
+        );
+        await addAcceptedMembers(room);
+      },
+      "Trust verified device & add member",
     );
   }
 }

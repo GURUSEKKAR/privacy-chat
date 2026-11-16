@@ -189,6 +189,31 @@ class BrowserInteropTest extends IntegrationTestBase {
         var inv = entry.getKey().call(Map.of("command", "invites")).get(0);
         entry.getKey().call(Map.of("command", "accept", "invite", inv));
       }
+      String previousFingerprint = String.join(" ", java.util.Collections.nCopies(10, "AAAA"));
+      owner.call(
+          Map.of(
+              "command",
+              "rememberFingerprint",
+              "user",
+              b.get("userId").asString(),
+              "fingerprint",
+              previousFingerprint));
+      assertThatThrownBy(() -> owner.call(Map.of("command", "add", "room", id)))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining("Device fingerprint changed");
+      assertThatThrownBy(() -> removed.call(Map.of("command", "enter", "room", id)))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining("Waiting for the owner");
+      owner.call(
+          Map.of(
+              "command",
+              "verifyChangedFingerprint",
+              "user",
+              b.get("userId").asString(),
+              "previous",
+              previousFingerprint,
+              "current",
+              b.get("deviceFingerprint").asString()));
       owner.call(Map.of("command", "add", "room", id));
       for (var client : java.util.List.of(owner, removed, retained))
         client.call(Map.of("command", "enter", "room", id));

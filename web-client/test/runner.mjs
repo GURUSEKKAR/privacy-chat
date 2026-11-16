@@ -115,6 +115,12 @@ const operations = {
   async add(p) {
     return client.addAccepted(await client.api.call("/api/v1/rooms/" + p.room));
   },
+  async rememberFingerprint(p) {
+    await client.mls.pin(p.user, p.fingerprint);
+  },
+  async verifyChangedFingerprint(p) {
+    await client.mls.trustChangedFingerprint(p.user, p.previous, p.current);
+  },
   async enter(p) {
     selected = await client.api.call("/api/v1/rooms/" + p.room);
     await client.enter(selected, p.password ?? null);

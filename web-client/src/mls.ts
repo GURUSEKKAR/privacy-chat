@@ -37,6 +37,17 @@ export const suiteReady = getCiphersuiteImpl(
   getCiphersuiteFromName("MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519"),
 );
 type Pending = { publicPackage: KeyPackage; privatePackage: PrivateKeyPackage };
+export class FingerprintChangedError extends Error {
+  constructor(
+    readonly userId: string,
+    readonly previous: string,
+    readonly current: string,
+  ) {
+    super(
+      "Device fingerprint changed. Verify it with the member before continuing.",
+    );
+  }
+}
 export class Mls {
   groups = new Map<string, ClientState>();
   pending = new Map<string, Pending>();
@@ -66,14 +77,31 @@ export class Mls {
   async pin(user: string, fp: string) {
     const existing = this.pins.get(user);
     if (existing && existing !== fp)
-      throw new Error(
-        "Device fingerprint changed. Verify it out of band before using this room.",
-      );
+      throw new FingerprintChangedError(user, existing, fp);
     this.pins.set(user, fp);
     localStorage.setItem(
       "privacy-chat.pins." + this.userId,
       JSON.stringify(Object.fromEntries(this.pins)),
     );
+  }
+  async trustChangedFingerprint(
+    user: string,
+    previous: string,
+    current: string,
+  ) {
+    if (this.pins.get(user) !== previous)
+      throw new Error(
+        "Saved fingerprint changed during review. Review the member again.",
+      );
+    if (!/^[A-F0-9]{4}( [A-F0-9]{4}){9}$/.test(current))
+      throw new Error("Invalid device fingerprint.");
+    this.pins.delete(user);
+    try {
+      await this.pin(user, current);
+    } catch (error) {
+      this.pins.set(user, previous);
+      throw error;
+    }
   }
   async packages(count = 8): Promise<string[]> {
     if (this.pending.size + count > 256)

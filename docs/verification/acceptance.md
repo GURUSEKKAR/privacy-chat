@@ -82,3 +82,7 @@ The website has simplified username/password forms and Null branding, a default 
 ## Pending-reset settings fix and Null symbol
 
 Verified 17 November 2026: the full local suite plus targeted native Keychain and rebuilt TLS smoke checks pass (64 Java tests, zero failures/errors/skips; four Node tests). Owners can edit metadata while locked or expired, without extending an expired deadline or reopening access. Browser interoperability covers saving a password/name during reset, reopening as owner to finish rekeying, and explicit reset recovery. The slashed-circle header and favicon follow Terminal/Normal theme colors. Visual acceptance remains pending because the browser access host is unavailable. The prepared manual SQL wipe has not been executed against Render; database access is required.
+
+## Invitation key-change recovery
+
+17 November 2026: all three browser interoperability scenarios pass with a remembered old member fingerprint: owner addition is blocked before review, pending member entry reports waiting for owner, explicit verification enables addition and encrypted messaging. Five Node tests pass, including stale review rejection and persistence of the verified fingerprint. The production web build passes. Java backend source is unchanged. Browser visual acceptance remains pending.

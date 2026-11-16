@@ -1,7 +1,7 @@
 import { Client } from "@stomp/stompjs";
 import { signWithLabel } from "ts-mls/crypto/signature.js";
 import { Api } from "./api";
-import { Mls, suiteReady } from "./mls";
+import { Mls, suiteReady, FingerprintChangedError } from "./mls";
 import { b64, utf8, normalizeUser, validateAccount } from "./bytes";
 import { loadIdentity, saveIdentity, type Identity } from "./vault";
 import type { Room, Tokens, Member, Message, ChatEvent, Invite } from "./types";
@@ -246,6 +246,10 @@ export class ChatClient {
     await this.leave();
     await this.connect();
     room = await this.api.call<Room>("/api/v1/rooms/" + room.id);
+    if (room.myMembershipState === "PENDING_KEYS")
+      throw new Error(
+        "Waiting for the owner to add your accepted invitation to the encrypted group.",
+      );
     if (room.state === "LOCKED_PENDING_REKEY" && room.myRole === "OWNER") {
       await this.finishReset(room);
       room = await this.api.call<Room>("/api/v1/rooms/" + room.id);
@@ -409,8 +413,10 @@ export class ChatClient {
     for (const i of invites) {
       const pinned = this.mls!.pins.get(i.inviteeUserId);
       if (pinned && pinned !== i.acceptedDeviceFingerprint)
-        throw new Error(
-          "Invitee device key changed. Verify its fingerprint before continuing.",
+        throw new FingerprintChangedError(
+          i.inviteeUserId,
+          pinned,
+          i.acceptedDeviceFingerprint,
         );
     }
     const claimed = [];
