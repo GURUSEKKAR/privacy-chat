@@ -4,6 +4,8 @@ Updated 16 November 2026. MVP implementation and local acceptance are complete. 
 
 ## Completed implementation
 
+- [x] Quote JavaFX Maven options so TLS certificate and data paths work in folders containing spaces; verified the launcher from `RCR M_4`.
+
 - [x] Accounts, device enrollment/approval/revocation, fingerprint checks and encrypted local storage.
 - [x] Invitations, room capacity, MLS membership changes, encrypted delivery and offline catch-up.
 - [x] View-once session consumption, display acknowledgement, exact TTL enforcement and cleanup.
