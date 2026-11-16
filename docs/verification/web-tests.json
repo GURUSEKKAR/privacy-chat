@@ -1,10 +1,14 @@
 {
   "verified_at_utc": "2026-11-16T21:57:07.915407+00:00",
-  "verification_inputs_sha256": "bc9d941192684877761a6cd66538dd97c032b3dafaf370415196de1bac23c7a5",
+  "verification_inputs_sha256": "874e840999cd28fad6c560cbee5f95b033daab7446d3beb5ba4bf983ec03d265",
   "passed": true,
   "tests": 4,
   "failures": 0,
   "scope": "Web SDK account/vault/MLS tests and production bundle import resolution; two Java-to-TypeScript interoperability tests are included in test-summary.json",
   "running_proxy_check": "passed: mandatory authenticator enrollment/confirmation, verified TLS, socket ticket, encrypted send and view-once re-entry",
-  "visual_acceptance": "pending: Terminal/Normal mobile and desktop browser visual checks; browser-control host unavailable"
+  "visual_acceptance": "pending: Terminal/Normal mobile and desktop browser visual checks; browser-control host unavailable",
+  "follow_up_validation": {
+    "at_utc": "2026-11-16T22:00:08.193406+00:00",
+    "scope": "Only the settings test clock changed after the full suite; targeted RoomSettingsTest and Spotless pass. Production code unchanged."
+  }
 }

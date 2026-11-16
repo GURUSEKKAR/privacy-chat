@@ -8,5 +8,9 @@
     "desktop-client"
   ],
   "findings": [],
-  "verification_inputs_sha256": "bc9d941192684877761a6cd66538dd97c032b3dafaf370415196de1bac23c7a5"
+  "verification_inputs_sha256": "874e840999cd28fad6c560cbee5f95b033daab7446d3beb5ba4bf983ec03d265",
+  "follow_up_validation": {
+    "at_utc": "2026-11-16T22:00:08.193406+00:00",
+    "scope": "Only the settings test clock changed after the full suite; targeted RoomSettingsTest and Spotless pass. Production code unchanged."
+  }
 }

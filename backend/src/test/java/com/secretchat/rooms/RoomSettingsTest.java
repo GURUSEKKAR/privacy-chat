@@ -52,6 +52,7 @@ class RoomSettingsTest extends IntegrationTestBase {
 
   @Test
   void ownerCanEditLockedOrExpiredSettingsWithoutReopeningCycleAndMembersCannot() {
+    clock.setInstant(java.time.Instant.parse("2026-11-17T00:00:00Z"));
     var owner = register("settingsowner");
     var member = register("settingsmember");
     var r = createRoom(owner, 600, 3600, null);
