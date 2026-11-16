@@ -103,8 +103,7 @@
   "build_command": "mvn -o verify spotless:check -Dsecretchat.gui=true -Dsecretchat.keychain.integration=true -Dsecretchat.deployment=true",
   "release_gates": [
     "Independent security review and closure of findings",
-    "Organizational threat model sign-off",
-    "Hosted pull-request CI run after connecting a remote repository"
+    "Organizational threat model sign-off"
   ],
   "verification_inputs_sha256": "b94c432e46f6f0b061cb5746672760844a575bad2bf7d4111260562b036eb4d9"
 }

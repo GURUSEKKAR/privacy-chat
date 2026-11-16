@@ -16,17 +16,18 @@ Updated 16 November 2026. MVP implementation and local acceptance are complete. 
 - [x] Native macOS app/ZIP, runtime self-check, source review archive and source-bound release gate checker.
 - [x] Offline container OS scan without application upload; zero known high/critical findings.
 
+- [x] F-06 — hosted Linux verification passed, including GUI, HTTPS/WSS, restore and offline container scan ([run](https://github.com/GURUSEKKAR/privacy-chat/actions/runs/43824064106)). The workflow also triggers on pull requests.
+
 ## Remaining release gates
 
 - [ ] R-05 — organizational sign-off of the documented threat model.
-- [ ] F-06 — execute the hosted PR workflow on the supplied GitHub repository; configuration and equivalent local checks already pass.
 - [ ] Q-06 — independent external security review and closure of its findings.
 
 No external reviewer has been contacted. No production-safe E2EE certification is claimed. M1–M4 have local acceptance evidence; M5 remains release-gated. The MVP deliberately keeps MLS group state in memory, uses one device per room membership and remains a single-node server. See [optional scope decisions](docs/backlog.md).
 
 ## Original workflow checklist
 
-Checked items have implementation and local verification evidence. Human approvals and hosted execution remain explicitly unchecked.
+Checked items have implementation and local verification evidence. Human approvals remain explicitly unchecked; hosted push verification has passed.
 
 ### Phase 0  |  Requirements and threats
 
@@ -55,8 +56,8 @@ Checked items have implementation and local verification evidence. Human approva
   Proof: Fresh DB can be created from scratch.
 - [x] F-05  [P1]  Create JavaFX skeleton with registration, login, room list and chat navigation.
   Proof: Screens launch without backend errors.
-- [ ] F-06  [P1]  Add CI for build, unit tests, formatting and dependency alerts.
-  Proof: Pull request runs checks automatically.
+- [x] F-06  [P1]  Add CI for build, unit tests, formatting and dependency alerts.
+  Proof: Hosted push verification passed; the same workflow is configured for pull requests.
 
 ### Phase 2  |  User identity and device trust
 

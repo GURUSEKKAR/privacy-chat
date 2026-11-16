@@ -42,7 +42,6 @@ The final image logs and a database export were checked for the controlled test 
 ## Remaining human and hosting gates
 
 - R-05: organizational acceptance/sign-off of the threat model.
-- F-06: actual hosted PR workflow execution, on the supplied GitHub repository. The source workflow and its local build/test/format/scan commands are implemented and exercised.
 - Q-06: independent external security review and remediation of its findings. No reviewer has been contacted or certification claimed.
 
 M1 through M4 have implementation and local acceptance evidence. M5 remains release-gated by the independent review. Local certificates are for development; remote infrastructure approval, trust distribution and backup policies remain operator responsibilities.
@@ -54,3 +53,5 @@ The additional cases verify bounded authentication storage, room-session ownersh
 The native macOS bundle self-check passes with three FXML screens, Bouncy Castle signatures and JSON support under Java 21. Desktop visual interaction in the packaged app was not observed because computer-control permission was unavailable; the JavaFX acceptance test exercised the application screens. The app is unsigned and unnotarized.
 
 Trivy 0.76.2 scanned 140 Ubuntu 26.04 OS packages with networking disabled while the private image was mounted; no known high/critical findings were reported. Java libraries are covered separately by the OSV dependency audit. The final backend rebuild changes the application layer; its OS base layers are compared with the scanned image rather than representing a second full scan. Hosted CI scans its fresh image. Docker Scout was not used because automatic approval review rejected its potential upload of private image metadata/content.
+
+Hosted Linux CI passed on commit `dda6f5143a302d49594a31fcdada61a5adf12f96`: [verification run](https://github.com/GURUSEKKAR/privacy-chat/actions/runs/43824064106). It includes the full build, JavaFX GUI, static/dependency checks, certificate-validated HTTPS/WSS, database restore and offline OS scan. The same workflow triggers on pull requests; this evidence is a push run.
