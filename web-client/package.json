@@ -12,7 +12,7 @@
   "dependencies": {
     "@noble/ciphers": "2.1.1",
     "@noble/curves": "2.0.1",
-    "@noble/post-quantum": "0.5.2",
+    "@noble/post-quantum": "0.7.1",
     "@stomp/stompjs": "7.5.0",
     "qrcode": "1.5.4",
     "ts-mls": "1.6.4"
