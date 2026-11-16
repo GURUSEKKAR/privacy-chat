@@ -10,7 +10,7 @@
     "verify:local": "node test/proxy-check.mjs"
   },
   "dependencies": {
-    "@noble/ciphers": "2.1.1",
+    "@noble/ciphers": "2.4.0",
     "@noble/curves": "2.0.1",
     "@noble/post-quantum": "0.5.2",
     "@stomp/stompjs": "7.5.0",
