@@ -121,6 +121,8 @@ The browser MLS library is ts-mls 1.6.4 (MIT), cipher suite 1. Unsupported optio
 
 ## Free Render + Vercel deployment
 
+The Render Blueprint tracks `main` and requests automatic deployment after GitHub CI passes (`autoDeployTrigger: checksPass`). For an existing service, sync the Blueprint once to apply this configuration; if Blueprint auto-sync is disabled, changing this file alone does not apply it. In the service’s Settings, confirm the repository connection, `main` branch, and Auto-Deploy = After CI Checks Pass. A failed CI run blocks deployment. Use Manual Deploy → Deploy latest commit for an immediate deployment of an already verified commit. Vercel deploys the web frontend separately.
+
 The production web frontend is a static Vite site on Vercel; the Java API and WebSocket endpoint run together as one Docker web service on Render. Vercel assigns the static site its own hosting and HTTPS, so it does not need a fixed port. The Render container binds to `0.0.0.0:$PORT` (the Blueprint defaults `PORT` to `10000`) and Render terminates public HTTPS/WSS. Do not set a Vercel `PORT`.
 
 1. In Vercel, import this repository as a Vite project and set the project **Root Directory** to `web-client`. Deploy once to get the site's `https://<project>.vercel.app` origin; the API is not connected yet.
