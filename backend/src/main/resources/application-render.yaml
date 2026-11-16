@@ -1,0 +1,12 @@
+server:
+  address: 0.0.0.0
+  port: ${PORT:10000}
+  ssl:
+    enabled: false
+  forward-headers-strategy: framework
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${SECRETCHAT_DB_HOST}:${SECRETCHAT_DB_PORT:5432}/${SECRETCHAT_DB_NAME}
+    username: ${SECRETCHAT_DB_USER}
+    password: ${SECRETCHAT_DB_PASSWORD}

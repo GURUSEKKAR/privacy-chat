@@ -20,7 +20,7 @@ spring:
     time-zone: UTC
 
 server:
-  address: 127.0.0.1
+  address: ${SERVER_ADDRESS:127.0.0.1}
   port: ${PORT:8080}
   # Direct TLS is the default. Enable forwarded headers only behind a trusted, sanitizing proxy.
   forward-headers-strategy: none
@@ -55,3 +55,5 @@ secretchat:
   invitation-ttl: 24h
   max-room-members: 16
   deleted-metadata-retention: 0s
+  web:
+    allowed-origins: ${SECRETCHAT_WEB_ORIGINS:}

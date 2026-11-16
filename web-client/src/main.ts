@@ -3,7 +3,10 @@ import { ChatClient, type Displayed } from "./client";
 import { validateAccount } from "./bytes";
 import type { Room, Invite, Member, Device } from "./types";
 const app = document.querySelector<HTMLDivElement>("#app")!;
-const client = new ChatClient();
+const apiOrigin = (
+  import.meta.env.VITE_API_ORIGIN?.trim() || location.origin
+).replace(/\/+$/, "");
+const client = new ChatClient(apiOrigin);
 let mode: "register" | "login" = "register";
 let selected: Room | null = null;
 let allRooms: Room[] = [];

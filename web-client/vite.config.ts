@@ -5,9 +5,12 @@ import { fileURLToPath } from "node:url";
 const certificate = fileURLToPath(
   new URL("../.local/tls/localhost.crt", import.meta.url),
 );
-const agent = existsSync(certificate)
-  ? new Agent({ ca: readFileSync(certificate) })
-  : undefined;
+const localBackend = !process.env.SECRETCHAT_DEV_BACKEND;
+const backend = process.env.SECRETCHAT_DEV_BACKEND || "https://localhost:18443";
+const agent =
+  localBackend && existsSync(certificate)
+    ? new Agent({ ca: readFileSync(certificate) })
+    : undefined;
 export default defineConfig({
   build: {
     target: "es2022",
@@ -25,16 +28,20 @@ export default defineConfig({
     strictPort: true,
     port: 5173,
     proxy: {
-      "/api": { target: "https://localhost:18443", agent, changeOrigin: true },
-      "/ws": {
-        target: "wss://localhost:18443",
+      "/api": {
+        target: backend,
         agent,
         changeOrigin: true,
-        rewriteWsOrigin: true,
+      },
+      "/ws": {
+        target: backend.replace(/^http/, "ws"),
+        agent,
+        changeOrigin: true,
+        rewriteWsOrigin: localBackend,
         ws: true,
       },
       "/actuator/health": {
-        target: "https://localhost:18443",
+        target: backend,
         agent,
         changeOrigin: true,
       },

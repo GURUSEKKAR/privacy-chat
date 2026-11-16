@@ -18,21 +18,34 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   private final StompAuthInterceptor authInterceptor;
   private final WsSessionRegistry registry;
   private final com.secretchat.web.BrowserSocketTickets browserTickets;
+  private final String browserOrigins;
 
   public WebSocketConfig(
       StompAuthInterceptor authInterceptor,
       WsSessionRegistry registry,
-      com.secretchat.web.BrowserSocketTickets browserTickets) {
+      com.secretchat.web.BrowserSocketTickets browserTickets,
+      @org.springframework.beans.factory.annotation.Value("${secretchat.web.allowed-origins:}")
+          String browserOrigins) {
     this.authInterceptor = authInterceptor;
     this.registry = registry;
     this.browserTickets = browserTickets;
+    this.browserOrigins = browserOrigins;
   }
 
   @Override
   public void registerStompEndpoints(StompEndpointRegistry endpoints) {
     endpoints.addEndpoint("/ws");
+    var browserAllowedOrigins =
+        new java.util.ArrayList<>(
+            java.util.List.of(
+                "http://localhost:5173", "http://127.0.0.1:5173", "https://localhost:18443"));
+    java.util.Arrays.stream(browserOrigins.split(","))
+        .map(String::trim)
+        .filter(origin -> !origin.isEmpty())
+        .forEach(browserAllowedOrigins::add);
     endpoints
         .addEndpoint("/ws/browser")
+        .setAllowedOrigins(browserAllowedOrigins.toArray(String[]::new))
         .addInterceptors(new com.secretchat.web.BrowserSocketHandshake(browserTickets))
         .setHandshakeHandler(
             new org.springframework.web.socket.server.support.DefaultHandshakeHandler() {

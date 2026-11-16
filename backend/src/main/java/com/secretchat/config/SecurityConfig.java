@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -18,6 +19,25 @@ import org.springframework.security.web.authentication.AnonymousAuthenticationFi
  */
 @Configuration
 public class SecurityConfig {
+
+  @Bean
+  org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource(
+      @org.springframework.beans.factory.annotation.Value("${secretchat.web.allowed-origins:}")
+          String allowedOrigins) {
+    var cors = new org.springframework.web.cors.CorsConfiguration();
+    cors.setAllowedOrigins(
+        java.util.Arrays.stream(allowedOrigins.split(","))
+            .map(String::trim)
+            .filter(origin -> !origin.isEmpty())
+            .toList());
+    cors.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+    cors.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type"));
+    cors.setAllowCredentials(false);
+    cors.setMaxAge(600L);
+    var source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/api/**", cors);
+    return source;
+  }
 
   /** Bearer-only authentication has no default password account or generated-password log. */
   @Bean
@@ -32,6 +52,7 @@ public class SecurityConfig {
   @org.springframework.core.annotation.Order(2)
   SecurityFilterChain api(HttpSecurity http, AuthService authService) throws Exception {
     http.csrf(c -> c.disable())
+        .cors(Customizer.withDefaults())
         .httpBasic(b -> b.disable())
         .formLogin(f -> f.disable())
         .logout(l -> l.disable())

@@ -1,0 +1,44 @@
+databases:
+  - name: privacy-chat-db
+    region: oregon
+    plan: free
+    postgresMajorVersion: "17"
+    databaseName: secretchat
+    user: secretchat
+
+services:
+  - type: web
+    name: privacy-chat-api
+    runtime: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health/readiness
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: render
+      - key: PORT
+        value: "10000"
+      - key: SECRETCHAT_WEB_ORIGINS
+        sync: false
+      - key: SECRETCHAT_DB_HOST
+        fromDatabase:
+          name: privacy-chat-db
+          property: host
+      - key: SECRETCHAT_DB_PORT
+        fromDatabase:
+          name: privacy-chat-db
+          property: port
+      - key: SECRETCHAT_DB_NAME
+        fromDatabase:
+          name: privacy-chat-db
+          property: database
+      - key: SECRETCHAT_DB_USER
+        fromDatabase:
+          name: privacy-chat-db
+          property: user
+      - key: SECRETCHAT_DB_PASSWORD
+        fromDatabase:
+          name: privacy-chat-db
+          property: password

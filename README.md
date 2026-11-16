@@ -118,3 +118,16 @@ Open **http://localhost:5173**. The local preview proxies only to the localhost 
 `npm test --prefix web-client` checks password boundaries, encrypted key storage, authenticated messages, tampering, replay and reset isolation. `mvn verify -Dsecretchat.web=true` additionally runs the TypeScript web SDK against the real Java backend and desktop MLS client. Browser UI interaction still needs visual acceptance on target browsers; programmatic SDK tests do not establish visual behavior.
 
 The browser MLS library is ts-mls 1.6.4 (MIT), cipher suite 1. Unsupported optional cipher suites are not exposed. See its upstream security notice; independent review remains a release gate for the expanded browser implementation.
+
+## Free Render + Vercel deployment
+
+The production web frontend is a static Vite site on Vercel; the Java API and WebSocket endpoint run together as one Docker web service on Render. Vercel assigns the static site its own hosting and HTTPS, so it does not need a fixed port. The Render container binds to `0.0.0.0:$PORT` (the Blueprint defaults `PORT` to `10000`) and Render terminates public HTTPS/WSS. Do not set a Vercel `PORT`.
+
+1. In Vercel, import this repository as a Vite project and set the project **Root Directory** to `web-client`. Deploy once to get the site's `https://<project>.vercel.app` origin; the API is not connected yet.
+2. In Render, create a Blueprint from this repository and select the free plan for both resources. The root `render.yaml` creates the Docker API service and PostgreSQL database. When prompted for `SECRETCHAT_WEB_ORIGINS`, enter the exact Vercel origin from step 1. Render's first image build compiles the browser bundle and Java backend inside the Docker build.
+3. Copy the actual Render API URL from its dashboard, then add it to Vercel as `VITE_API_ORIGIN` (for example `https://privacy-chat-api.onrender.com`, no trailing slash). Redeploy Vercel. If you add a custom domain, add its exact HTTPS origin, comma-separated, to Render's `SECRETCHAT_WEB_ORIGINS` and redeploy the API.
+4. Open the Vercel URL and create an account with a password of at least 12 characters. The API can take about a minute to wake after inactivity on Render's free service.
+
+The HTTP port is selected by Render's `PORT` environment variable, not a port number embedded in frontend code. `render.yaml` sets the default to `10000`; Render routes both HTTPS and WSS to that same port. For local Vite development, `SECRETCHAT_DEV_BACKEND` optionally changes the proxy target.
+
+**Free-tier data limitation:** Render's free PostgreSQL is temporary: it expires 30 days after creation, has no backups, and the free web service can sleep after 15 minutes without inbound traffic. Treat this as a demo, export any data you need before database expiry, and do not use these free resources for accounts or data you need to preserve. Render describes these limitations in its [free service documentation](https://render.com/docs/free). Vercel Functions cannot host this app's long-lived WebSocket server; the browser connects directly to Render instead ([Vercel WebSocket limits](https://vercel.com/docs/limits#websockets)).
