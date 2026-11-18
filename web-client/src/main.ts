@@ -717,7 +717,7 @@ async function authenticator(state?: MfaState) {
     });
     return;
   }
-  app.innerHTML = `<main class="landing"><header>${brand}</header><section class="pending-wrap"><div class="tag">${setup ? "Secure your account" : "Second verification"}</div><h2>${setup ? "Set up Google Authenticator." : "Enter your authenticator code."}</h2><p>${setup ? "Open Google Authenticator, tap +, and scan this QR code. Then enter the 6-digit code shown for Null." : "Open your authenticator app and enter the current 6-digit code. You can also use an unused recovery code."}</p>${setup ? '<canvas id="auth-qr" aria-label="Authenticator setup QR code"></canvas><details><summary>Cannot scan? Enter this setup key manually</summary><p id="setup-secret" class="fingerprint"></p></details>' : ""}<form id="mfa-form"><label>${setup ? "6-digit code" : "Authenticator or recovery code"}<input id="mfa-code" autocomplete="one-time-code" ${setup ? 'inputmode="numeric" pattern="[0-9]{6}" maxlength="6"' : 'maxlength="64"'} required></label><p id="auth-status" class="status" role="alert"></p><div class="inline-actions"><button id="verify-mfa" class="primary" type="submit">Verify &amp; continue</button><button id="logout" type="button">Sign out</button></div></form></section></main>`;
+  app.innerHTML = `<main class="landing"><header>${brand}</header><section class="pending-wrap"><div class="tag">${setup ? "Secure your account" : "Second verification"}</div><h2>${setup ? "Set up Google Authenticator." : "Enter your authenticator code."}</h2><p>${setup ? "In Google Authenticator, tap + and scan this QR code, or enter the setup key below." : "Open your authenticator app and enter the current 6-digit code. You can also use an unused recovery code."}</p>${setup ? '<canvas id="auth-qr" aria-label="Authenticator setup QR code"></canvas><section class="setup-key" aria-labelledby="setup-key-title"><h3 id="setup-key-title">Setup key</h3><p>In Google Authenticator, choose <strong>Enter a setup key</strong> and type this code.</p><code id="setup-secret" class="setup-secret"></code><button id="copy-setup-secret" type="button">Copy setup key</button><small>Keep this key private. Anyone with it can generate your authenticator codes.</small></section>' : ""}<form id="mfa-form"><label>${setup ? "6-digit code" : "Authenticator or recovery code"}<input id="mfa-code" autocomplete="one-time-code" ${setup ? 'inputmode="numeric" pattern="[0-9]{6}" maxlength="6"' : 'maxlength="64"'} required></label><p id="auth-status" class="status" role="alert"></p><div class="inline-actions"><button id="verify-mfa" class="primary" type="submit">Verify &amp; continue</button><button id="logout" type="button">Sign out</button></div></form></section></main>`;
   bind("logout", async () => {
     await client.logout();
     login();
@@ -736,6 +736,10 @@ async function authenticator(state?: MfaState) {
         { width: 256, margin: 4 },
       );
       document.querySelector("#setup-secret")!.textContent = qr.secret;
+      bind("copy-setup-secret", async () => {
+        await navigator.clipboard.writeText(qr.secret);
+        status("Setup key copied. Keep it private.");
+      });
       submit.disabled = false;
     } catch (error) {
       status(
