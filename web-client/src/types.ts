@@ -32,6 +32,20 @@ export interface Member {
   role: string;
   deviceFingerprint: string;
 }
+export type RosterFingerprints = Record<string, string>;
+export interface MlsEvent {
+  generation: number;
+  epoch: number;
+  eventType: string;
+  commit: string;
+  rosterFingerprints?: RosterFingerprints | null;
+}
+export interface MlsWelcome {
+  generation: number;
+  epoch: number;
+  welcome: string;
+  rosterFingerprints?: RosterFingerprints | null;
+}
 export interface Invite {
   id: string;
   roomId: string;

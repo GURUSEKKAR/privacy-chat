@@ -48,7 +48,11 @@ public class ChatStompController {
     if (!violations.isEmpty()) {
       throw ApiException.badRequest("VALIDATION_FAILED", "Invalid message frame");
     }
-    return messages.send(principal(principal), roomId, frame);
+    try {
+      return messages.send(principal(principal), roomId, frame);
+    } catch (ApiException e) {
+      return ChatEvent.error(null, frame.idempotencyKey(), e.code(), e.getMessage());
+    }
   }
 
   @MessageExceptionHandler

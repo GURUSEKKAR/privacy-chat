@@ -3,6 +3,8 @@ package com.secretchat.crypto_relay;
 import com.secretchat.auth.AuthPrincipal;
 import com.secretchat.common.ApiException;
 import com.secretchat.common.Hashing;
+import com.secretchat.devices.Device;
+import com.secretchat.devices.DeviceRepository;
 import com.secretchat.invitations.Invitation;
 import com.secretchat.invitations.InvitationRepository;
 import com.secretchat.memberships.Membership;
@@ -24,8 +26,10 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +45,7 @@ public class MlsRelayService {
   private final MlsEventRepository events;
   private final MembershipRepository memberships;
   private final InvitationRepository invitations;
+  private final DeviceRepository devices;
   private final MembershipRevoker revoker;
   private final RoomAccess access;
   private final ChatNotifier notifier;
@@ -50,6 +55,7 @@ public class MlsRelayService {
       MlsEventRepository events,
       MembershipRepository memberships,
       InvitationRepository invitations,
+      DeviceRepository devices,
       MembershipRevoker revoker,
       RoomAccess access,
       ChatNotifier notifier,
@@ -57,6 +63,7 @@ public class MlsRelayService {
     this.events = events;
     this.memberships = memberships;
     this.invitations = invitations;
+    this.devices = devices;
     this.revoker = revoker;
     this.access = access;
     this.notifier = notifier;
@@ -169,6 +176,7 @@ public class MlsRelayService {
             purpose.name(),
             commit,
             welcome,
+            purpose == CommitPurpose.ADD ? rosterFingerprints(room, added) : null,
             p.deviceId(),
             now));
     room.advanceEpoch(newEpoch);
@@ -215,7 +223,8 @@ public class MlsRelayService {
                 e.getGeneration(),
                 e.getEpoch(),
                 e.getEventType(),
-                Hashing.b64(e.getOpaqueCommit())))
+                Hashing.b64(e.getOpaqueCommit()),
+                e.getRosterFingerprints()))
         .toList();
   }
 
@@ -232,7 +241,23 @@ public class MlsRelayService {
                 roomId, a.room().getGeneration(), a.membership().getJoinedEpoch())
             .filter(x -> x.getWelcome() != null)
             .orElseThrow(ApiException::notFound);
-    return new WelcomeView(e.getGeneration(), e.getEpoch(), Hashing.b64(e.getWelcome()));
+    return new WelcomeView(
+        e.getGeneration(), e.getEpoch(), Hashing.b64(e.getWelcome()), e.getRosterFingerprints());
+  }
+
+  private Map<String, String> rosterFingerprints(Room room, List<Membership> added) {
+    var roster = new ArrayList<>(added);
+    memberships.findByRoomIdAndState(room.getId(), Membership.State.ACTIVE).stream()
+        .filter(member -> member.getGeneration() == room.getGeneration())
+        .forEach(roster::add);
+    var fingerprintsByDevice =
+        devices.findAllById(roster.stream().map(Membership::getDeviceId).toList()).stream()
+            .collect(Collectors.toMap(Device::getId, Device::getFingerprint));
+    return roster.stream()
+        .collect(
+            Collectors.toMap(
+                member -> member.getUserId().toString(),
+                member -> fingerprintsByDevice.get(member.getDeviceId())));
   }
 
   private static void requireEpoch(Room room, Long fromEpoch) {

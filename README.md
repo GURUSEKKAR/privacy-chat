@@ -119,6 +119,10 @@ Open **http://localhost:5173**. The local preview proxies only to the localhost 
 
 The browser MLS library is ts-mls 1.6.4 (MIT), cipher suite 1. Unsupported optional cipher suites are not exposed. See its upstream security notice; independent review remains a release gate for the expanded browser implementation.
 
+## Render-only deployment
+
+The Render Docker image builds the browser application and packages it with the Java backend. Open the Render service URL to use the website, API, and WebSocket on the same origin. The bundled frontend automatically uses that origin. Keep the backend at one replica because authenticated WebSocket routing is held in process memory. The Blueprint tracks `main` and deploys after GitHub checks pass when that option is active on the service.
+
 ## Free Render + Vercel deployment
 
 The Render Blueprint tracks `main` and requests automatic deployment after GitHub CI passes (`autoDeployTrigger: checksPass`). For an existing service, sync the Blueprint once to apply this configuration; if Blueprint auto-sync is disabled, changing this file alone does not apply it. In the service’s Settings, confirm the repository connection, `main` branch, and Auto-Deploy = After CI Checks Pass. A failed CI run blocks deployment. Use Manual Deploy → Deploy latest commit for an immediate deployment of an already verified commit. Vercel deploys the web frontend separately.

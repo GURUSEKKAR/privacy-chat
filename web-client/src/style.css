@@ -63,6 +63,11 @@ select {
   background: #fff;
   color: #1b302d;
 }
+input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  accent-color: var(--green);
+}
 input:focus,
 textarea:focus,
 button:focus-visible {
@@ -850,4 +855,72 @@ select {
 [data-theme="terminal"] body,
 [data-theme="terminal"] .shell {
   border: 0;
+}
+
+.account-menu {
+  position: relative;
+}
+.account-menu > summary,
+.member-disclosure > summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.account-menu > summary {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  max-width: min(32ch, 48vw);
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.account-options {
+  position: absolute;
+  z-index: 5;
+  inset-inline-end: 0;
+  top: calc(100% + 6px);
+  min-width: max-content;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.account-options button {
+  text-align: start;
+}
+.member-disclosure {
+  margin: 18px 0;
+}
+.member-disclosure > summary {
+  padding: 8px 0;
+  font-size: 16px;
+}
+.member-disclosure #members {
+  max-height: 22rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .account-menu[open] .account-options,
+  .member-disclosure[open] #members {
+    animation: expand-disclosure 140ms ease-out;
+  }
+  @keyframes expand-disclosure {
+    from {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+  }
+}
+.invite-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+[data-theme="terminal"] .account-menu > summary,
+[data-theme="terminal"] .account-options {
+  background: #000;
+  border-style: dotted;
+  border-radius: 0;
 }

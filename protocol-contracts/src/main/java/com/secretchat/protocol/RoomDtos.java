@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /** Room, membership, invitation and MLS control DTOs. */
@@ -120,9 +121,15 @@ public final class RoomDtos {
   public record MlsCommitResult(int generation, long epoch, long sequenceNo, String roomState) {}
 
   public record MlsEventView(
-      long sequenceNo, int generation, long epoch, String eventType, String commit) {}
+      long sequenceNo,
+      int generation,
+      long epoch,
+      String eventType,
+      String commit,
+      Map<String, String> rosterFingerprints) {}
 
-  public record WelcomeView(int generation, long epoch, String welcome) {}
+  public record WelcomeView(
+      int generation, long epoch, String welcome, Map<String, String> rosterFingerprints) {}
 
   public record ResetResult(int generation, String state, Instant nextResetAt) {}
 }

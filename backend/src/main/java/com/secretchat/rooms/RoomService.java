@@ -7,6 +7,8 @@ import com.secretchat.common.ApiException;
 import com.secretchat.common.Hashing;
 import com.secretchat.devices.Device;
 import com.secretchat.devices.DeviceRepository;
+import com.secretchat.invitations.Invitation;
+import com.secretchat.invitations.InvitationRepository;
 import com.secretchat.memberships.Membership;
 import com.secretchat.memberships.MembershipRepository;
 import com.secretchat.protocol.RoomDtos.CreateRoomRequest;
@@ -34,6 +36,7 @@ public class RoomService {
   private final MembershipRepository memberships;
   private final UserRepository users;
   private final DeviceRepository devices;
+  private final InvitationRepository invitations;
   private final RoomAccess access;
   private final RoomPasswords roomPasswords;
   private final Clock clock;
@@ -43,6 +46,7 @@ public class RoomService {
       MembershipRepository memberships,
       UserRepository users,
       DeviceRepository devices,
+      InvitationRepository invitations,
       RoomAccess access,
       RoomPasswords roomPasswords,
       Clock clock) {
@@ -50,6 +54,7 @@ public class RoomService {
     this.memberships = memberships;
     this.users = users;
     this.devices = devices;
+    this.invitations = invitations;
     this.access = access;
     this.roomPasswords = roomPasswords;
     this.clock = clock;
@@ -113,11 +118,24 @@ public class RoomService {
   @Transactional(readOnly = true)
   public List<RoomView> listMine(AuthPrincipal p) {
     RoomAccess.requireApprovedDevice(p);
-    return memberships
-        .findByUserIdAndStateIn(
-            p.userId(), List.of(Membership.State.ACTIVE, Membership.State.PENDING_KEYS))
-        .stream()
+    var mine =
+        memberships.findByUserIdAndStateIn(
+            p.userId(), List.of(Membership.State.ACTIVE, Membership.State.PENDING_KEYS));
+    Instant now = clock.instant();
+    var awaitingKeys =
+        mine.stream().anyMatch(m -> m.getState() == Membership.State.PENDING_KEYS)
+            ? invitations
+                .findByInviteeUserIdAndStatusIn(p.userId(), List.of(Invitation.Status.ACCEPTED))
+                .stream()
+                .filter(i ->
+                    now.isBefore(i.getExpiresAt()) && p.deviceId().equals(i.getAcceptedDeviceId()))
+                .collect(Collectors.toMap(Invitation::getRoomId, Invitation::getGeneration))
+            : Map.<UUID, Integer>of();
+    return mine.stream()
         .filter(m -> p.deviceId().equals(m.getDeviceId()))
+        .filter(m ->
+            m.isActive()
+                || Integer.valueOf(m.getGeneration()).equals(awaitingKeys.get(m.getRoomId())))
         .map(m -> rooms.findById(m.getRoomId()).map(r -> view(r, m)).orElse(null))
         .filter(java.util.Objects::nonNull)
         .toList();

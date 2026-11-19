@@ -166,6 +166,46 @@ class BrowserInteropTest extends IntegrationTestBase {
 
   @Test
   @Timeout(90)
+  void browserCatchUpAndDelayedWelcomeSurviveAnIntermediateRemoval() throws Exception {
+    try (var owner = new Browser("history-owner");
+        var returning = new Browser("history-returning");
+        var removed = new Browser("history-removed");
+        var delayed = new Browser("history-delayed")) {
+      owner.register(uniqueName("historyowner"));
+      String room = owner.call(Map.of("command", "create")).get("id").asString();
+      acceptInvite(owner, returning, room, "historyreturning");
+      owner.call(Map.of("command", "add", "room", room));
+      returning.call(Map.of("command", "enter", "room", room));
+      returning.call(Map.of("command", "leave"));
+
+      var removedDevice = acceptInvite(owner, removed, room, "historyremoved");
+      acceptInvite(owner, delayed, room, "historydelayed");
+      owner.call(Map.of("command", "add", "room", room));
+      owner.call(
+          Map.of(
+              "command", "remove", "room", room, "user", removedDevice.get("userId").asString()));
+
+      assertThat(returning.call(Map.of("command", "enter", "room", room)).get("epoch").asInt())
+          .isEqualTo(3);
+      assertThat(delayed.call(Map.of("command", "enter", "room", room)).get("epoch").asInt())
+          .isEqualTo(3);
+      returning.call(Map.of("command", "send", "text", "Message after returning to the room"));
+      delayed.call(Map.of("command", "waitMessage", "text", "Message after returning to the room"));
+    }
+  }
+
+  private JsonNode acceptInvite(Browser owner, Browser recipient, String room, String name)
+      throws Exception {
+    var account = recipient.register(uniqueName(name));
+    var invite =
+        owner.call(
+            Map.of("command", "invite", "room", room, "user", account.get("username").asString()));
+    recipient.call(Map.of("command", "accept", "invite", invite));
+    return account;
+  }
+
+  @Test
+  @Timeout(90)
   void browserPushDeliversWithoutPollingAndOwnerRemovesOnlySelectedMember() throws Exception {
     try (var owner = new Browser("fast-owner");
         var removed = new Browser("fast-removed");

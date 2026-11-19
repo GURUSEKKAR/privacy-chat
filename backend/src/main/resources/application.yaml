@@ -53,7 +53,7 @@ secretchat:
   access-token-ttl: 15m
   refresh-token-ttl: 7d
   invitation-ttl: 24h
-  max-room-members: 16
+  max-room-members: 30
   deleted-metadata-retention: 0s
   web:
     allowed-origins: ${SECRETCHAT_WEB_ORIGINS:}

@@ -5,7 +5,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * Opaque, ordered MLS control event (Commit and optional Welcome). {@code epoch} is the epoch the
@@ -37,6 +40,10 @@ public class MlsEvent {
   @Column(name = "welcome")
   private byte[] welcome;
 
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "roster_fingerprints")
+  private Map<String, String> rosterFingerprints;
+
   @Column(name = "created_by_device_id", nullable = false)
   private UUID createdByDeviceId;
 
@@ -53,6 +60,7 @@ public class MlsEvent {
       String eventType,
       byte[] commit,
       byte[] welcome,
+      Map<String, String> rosterFingerprints,
       UUID byDevice,
       Instant now) {
     this.id = UUID.randomUUID();
@@ -63,6 +71,7 @@ public class MlsEvent {
     this.eventType = eventType;
     this.opaqueCommit = commit;
     this.welcome = welcome;
+    this.rosterFingerprints = rosterFingerprints;
     this.createdByDeviceId = byDevice;
     this.createdAt = now;
   }
@@ -89,5 +98,9 @@ public class MlsEvent {
 
   public byte[] getWelcome() {
     return welcome;
+  }
+
+  public Map<String, String> getRosterFingerprints() {
+    return rosterFingerprints;
   }
 }

@@ -1,10 +1,25 @@
 import { Client } from "@stomp/stompjs";
 import { signWithLabel } from "ts-mls/crypto/signature.js";
 import { Api } from "./api";
-import { Mls, suiteReady, FingerprintChangedError } from "./mls";
+import {
+  Mls,
+  suiteReady,
+  FingerprintChangedError,
+  activeFingerprints,
+} from "./mls";
 import { b64, utf8, normalizeUser, validateAccount } from "./bytes";
 import { loadIdentity, saveIdentity, type Identity } from "./vault";
-import type { Room, Tokens, Member, Message, ChatEvent, Invite } from "./types";
+import type {
+  Room,
+  Tokens,
+  Member,
+  Message,
+  ChatEvent,
+  Invite,
+  MlsEvent,
+  MlsWelcome,
+  RosterFingerprints,
+} from "./types";
 export interface Displayed extends Message {
   cleartext: string;
   own: boolean;
@@ -21,6 +36,8 @@ export class ChatClient {
   onWarning: (message: string) => void = () => {};
   onDisplay: (message: Displayed) => Promise<boolean> = async () => false;
   private queue = Promise.resolve();
+  private incomingQueued = false;
+  private verifiedEpoch: number | null = null;
   private sends = new Map<
     string,
     {
@@ -180,8 +197,7 @@ export class ChatClient {
       if (p) {
         clearTimeout(p.timer);
         this.sends.delete(e.idempotencyKey);
-        if (e.type === "SENT") p.resolve(e);
-        else p.reject(new Error(e.detail || "Message was rejected."));
+        p.resolve(e);
       }
       return;
     }
@@ -201,9 +217,16 @@ export class ChatClient {
       this.room?.id === e.roomId &&
       this.sessionId
     ) {
+      if (this.incomingQueued) return;
+      this.incomingQueued = true;
       void this.serialized(async () => {
+        this.incomingQueued = false;
         if (!this.room || !this.sessionId || this.room.id !== e.roomId) return;
-        if (this.mls!.epoch(e.roomId) !== e.epoch) await this.catchUp();
+        if (
+          this.mls!.epoch(e.roomId) !== e.epoch ||
+          this.verifiedEpoch !== e.epoch
+        )
+          await this.catchUp();
         // REST rechecks recipient/session eligibility, so delayed push cannot replay a viewed message after re-entry.
         await this.readPending();
         this.onChange();
@@ -263,13 +286,17 @@ export class ChatClient {
         throw new Error(
           "Room keys were lost after restart. Use Reset room, then invite members again.",
         );
-      const welcome = await this.api.call<{ welcome: string }>(
+      const welcome = await this.api.call<MlsWelcome>(
         "/api/v1/rooms/" + room.id + "/mls/welcome",
       );
+      if (welcome.generation !== room.generation)
+        throw new Error("The room reset while opening. Try entering again.");
       await this.mls!.join(
         room.id,
         welcome.welcome,
-        await this.members(room.id),
+        welcome.rosterFingerprints ??
+          activeFingerprints(await this.members(room.id)),
+        welcome.epoch,
       );
     }
     const session = await this.api.call<{ sessionId: string }>(
@@ -291,6 +318,9 @@ export class ChatClient {
     const members = await this.members(room.id);
     const after = await this.api.call<Room>("/api/v1/rooms/" + room.id);
     if (
+      room.generation !== after.generation ||
+      after.state !== "ACTIVE" ||
+      after.myMembershipState !== "ACTIVE" ||
       room.mlsEpoch !== after.mlsEpoch ||
       this.mls!.epoch(room.id) !== after.mlsEpoch
     )
@@ -300,10 +330,13 @@ export class ChatClient {
     await this.mls!.verify(room.id, members);
   }
   async catchUp() {
-    if (!this.room || !this.sessionId) return;
-    const current = await this.api.call<Room>("/api/v1/rooms/" + this.room.id);
+    const room = this.room;
+    const session = this.sessionId;
+    if (!room || !session) return;
+    const current = await this.api.call<Room>("/api/v1/rooms/" + room.id);
+    if (this.sessionId !== session) return;
     if (
-      current.generation !== this.room.generation ||
+      current.generation !== room.generation ||
       current.myMembershipState !== "ACTIVE" ||
       current.state !== "ACTIVE"
     ) {
@@ -312,17 +345,38 @@ export class ChatClient {
       this.room = current;
       throw new Error("This room cycle ended. Reset/rekey is required.");
     }
-    const events = await this.api.call<{ epoch: number; commit: string }[]>(
+    const events = await this.api.call<MlsEvent[]>(
       "/api/v1/rooms/" +
         current.id +
         "/mls/events?afterEpoch=" +
         this.mls!.epoch(current.id),
     );
-    for (const e of events)
-      if (e.epoch > this.mls!.epoch(current.id))
-        await this.mls!.commit(current.id, e.commit, e.epoch);
-    this.room = current;
+    let currentRoster: RosterFingerprints | undefined;
+    for (const e of events) {
+      if (this.sessionId !== session) return;
+      if (
+        e.generation !== current.generation ||
+        e.epoch <= this.mls!.epoch(current.id) ||
+        e.epoch > current.mlsEpoch
+      )
+        continue;
+      // Older Add records predate roster snapshots. Use the current roster for those records.
+      const roster =
+        e.rosterFingerprints ??
+        (e.eventType === "ADD"
+          ? (currentRoster ??= activeFingerprints(
+              await this.members(current.id),
+            ))
+          : undefined);
+      if (this.sessionId !== session) return;
+      await this.mls!.commit(current.id, e.commit, e.epoch, roster);
+    }
+    if (this.sessionId !== session) return;
     await this.stableRoster(current);
+    if (this.sessionId === session) {
+      this.room = current;
+      this.verifiedEpoch = current.mlsEpoch;
+    }
   }
   async readPending() {
     if (!this.room || !this.sessionId) return;
@@ -331,20 +385,33 @@ export class ChatClient {
     const pending = await this.api.call<Message[]>(
       "/api/v1/rooms/" + r.id + "/messages?pending=true&sessionId=" + session,
     );
+    let unreadable = false;
     for (const m of pending) {
+      if (this.sessionId !== session) return;
       if (Date.parse(m.expiresAt) <= Date.now()) continue;
       let displayed = this.messages.get(m.messageId);
       if (!displayed) {
-        const cleartext = await this.mls!.decrypt(
-          r.id,
-          r.generation,
-          m.ciphertext,
-          m.senderUserId,
-        );
+        let cleartext: string;
+        try {
+          cleartext = await this.mls!.decrypt(
+            r.id,
+            r.generation,
+            m.ciphertext,
+            m.senderUserId,
+          );
+        } catch {
+          unreadable = true;
+          continue;
+        }
+        if (this.sessionId !== session) return;
         displayed = { ...m, cleartext, own: false, acknowledged: false };
         this.messages.set(m.messageId, displayed);
       }
-      if (!displayed.acknowledged && (await this.onDisplay(displayed))) {
+      if (
+        !displayed.acknowledged &&
+        (await this.onDisplay(displayed)) &&
+        this.sessionId === session
+      ) {
         await this.api.call(
           `/api/v1/rooms/${r.id}/messages/${m.messageId}/view`,
           "POST",
@@ -355,18 +422,58 @@ export class ChatClient {
     }
     for (const [id, m] of this.messages)
       if (Date.parse(m.expiresAt) <= Date.now()) this.messages.delete(id);
+    if (unreadable)
+      this.onWarning(
+        "Some messages could not be decrypted. Other available messages are still shown.",
+      );
   }
   async send(value: string) {
     if (!value.trim()) throw new Error("Write a message first.");
     if (utf8.encode(value).length > 32_000)
       throw new Error("Message is too long.");
+    const session = this.sessionId;
+    if (
+      this.room &&
+      session &&
+      this.verifiedEpoch !== this.mls!.epoch(this.room.id)
+    ) {
+      await this.catchUp();
+      if (this.sessionId !== session)
+        throw new Error("Enter the room again before sending.");
+    }
+    let response = await this.sendOnce(value);
+    if (response.type === "ERROR" && response.code === "WRONG_EPOCH") {
+      await this.catchUp();
+      if (this.sessionId !== session)
+        throw new Error("Enter the room again before sending.");
+      response = await this.sendOnce(value);
+    }
+    if (response.type === "ERROR")
+      throw new Error(response.detail || "Message was rejected.");
+    const message = {
+      ...response,
+      cleartext: value,
+      own: true,
+      acknowledged: true,
+    };
+    if (this.sessionId === session) {
+      this.messages.set(response.messageId, message);
+      this.onChange();
+    }
+    return message;
+  }
+  private async sendOnce(value: string) {
     if (!this.room || !this.sessionId) throw new Error("Enter a room first.");
     if (!this.socket?.connected)
       throw new Error("Use Reconnect before sending.");
     const r = this.room,
+      sessionId = this.sessionId,
+      socket = this.socket,
       key = crypto.randomUUID();
     const ciphertext = await this.mls!.encrypt(r.id, r.generation, value);
-    const response = await new Promise<ChatEvent>((resolve, reject) => {
+    if (this.sessionId !== sessionId || !socket.connected)
+      throw new Error("Connection closed before sending. Use Reconnect.");
+    return new Promise<ChatEvent>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.sends.delete(key);
         reject(
@@ -374,28 +481,25 @@ export class ChatClient {
         );
       }, 15_000);
       this.sends.set(key, { resolve, reject, timer });
-      this.socket!.publish({
-        destination: "/app/rooms/" + r.id + "/send",
-        body: JSON.stringify({
-          sessionId: this.sessionId,
-          generation: r.generation,
-          epoch: this.mls!.epoch(r.id),
-          idempotencyKey: key,
-          ciphertext,
-        }),
-      });
+      try {
+        socket.publish({
+          destination: "/app/rooms/" + r.id + "/send",
+          body: JSON.stringify({
+            sessionId,
+            generation: r.generation,
+            epoch: this.mls!.epoch(r.id),
+            idempotencyKey: key,
+            ciphertext,
+          }),
+        });
+      } catch (error) {
+        clearTimeout(timer);
+        this.sends.delete(key);
+        reject(error);
+      }
     });
-    const message = {
-      ...response,
-      cleartext: value,
-      own: true,
-      acknowledged: true,
-    };
-    this.messages.set(response.messageId, message);
-    this.onChange();
-    return message;
   }
-  async addAccepted(room: Room) {
+  async addAccepted(room: Room, invitationIds?: string[]) {
     if (room.myRole !== "OWNER")
       throw new Error("Only the owner can add members.");
     this.mls!.require(room.id);
@@ -408,7 +512,13 @@ export class ChatClient {
     for (const e of events) await this.mls!.commit(room.id, e.commit, e.epoch);
     const invites = (
       await this.api.call<Invite[]>("/api/v1/rooms/" + room.id + "/invites")
-    ).filter((i) => i.status === "ACCEPTED");
+    ).filter(
+      (i) =>
+        i.status === "ACCEPTED" &&
+        (!invitationIds || invitationIds.includes(i.id)),
+    );
+    if (invitationIds && invites.length !== invitationIds.length)
+      throw new Error("An invitation changed. Reopen the list and try again.");
     if (!invites.length) throw new Error("No accepted invitations yet.");
     for (const i of invites) {
       const pinned = this.mls!.pins.get(i.inviteeUserId);
@@ -512,6 +622,7 @@ export class ChatClient {
     this.messages.clear();
     this.room = null;
     this.sessionId = null;
+    this.verifiedEpoch = null;
     if (room && session)
       await this.api.call(
         "/api/v1/rooms/" + room.id + "/sessions/" + session,
@@ -519,16 +630,20 @@ export class ChatClient {
       );
   }
   async logout() {
+    this.messages.clear();
+    this.room = null;
+    this.sessionId = null;
+    this.verifiedEpoch = null;
+    this.onChange();
     try {
-      await this.leave();
-      await this.api.call("/api/v1/auth/logout", "POST");
+      if (this.api.tokens) await this.api.call("/api/v1/auth/logout", "POST");
     } finally {
-      await this.socket?.deactivate();
+      const socket = this.socket;
       this.socket = null;
       this.api.tokens = null;
       this.mls?.clear();
       this.mls = null;
-      this.messages.clear();
+      await socket?.deactivate();
     }
   }
 }

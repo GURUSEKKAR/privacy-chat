@@ -90,13 +90,11 @@ public class InvitationService {
         .ifPresent(m -> {
           throw ApiException.conflict("ALREADY_MEMBER", "User is already a member");
         });
-    long seats =
-        memberships.countByRoomIdAndStateIn(
-            roomId, List.of(Membership.State.ACTIVE, Membership.State.PENDING_KEYS));
-    if (seats >= props.maxRoomMembers()) {
+    Instant now = clock.instant();
+    if (memberships.countReservedSeats(roomId, room.getGeneration(), now)
+        >= props.maxRoomMembers()) {
       throw ApiException.conflict("ROOM_FULL", "Room member limit reached");
     }
-    Instant now = clock.instant();
     Instant expires = now.plus(props.invitationTtl());
     if (room.getNextResetAt().isBefore(expires)) {
       expires = room.getNextResetAt();
@@ -126,7 +124,10 @@ public class InvitationService {
   @Transactional(readOnly = true)
   public List<InvitationView> forRoom(AuthPrincipal p, UUID roomId) {
     RoomAccess.Access a = access.requireOwner(p, roomId, false);
+    Instant now = clock.instant();
     return invitations.findByRoomIdAndStatusIn(roomId, OPEN).stream()
+        .filter(
+            i -> i.getGeneration() == a.room().getGeneration() && now.isBefore(i.getExpiresAt()))
         .map(i ->
             view(
                 i,
@@ -165,8 +166,7 @@ public class InvitationService {
     }
     roomPasswords.require(p, room, roomPassword);
     // Invitations do not reserve seats. Enforce capacity again under the room lock at acceptance.
-    if (memberships.countByRoomIdAndStateIn(
-            room.getId(), List.of(Membership.State.ACTIVE, Membership.State.PENDING_KEYS))
+    if (memberships.countReservedSeats(room.getId(), room.getGeneration(), now)
         >= props.maxRoomMembers()) {
       throw ApiException.conflict("ROOM_FULL", "Room member limit reached");
     }
@@ -204,7 +204,8 @@ public class InvitationService {
             .filter(i -> i.getRoomId().equals(roomId))
             .orElseThrow(ApiException::notFound);
     if (inv.getStatus() != Invitation.Status.ACCEPTED
-        || inv.getGeneration() != a.room().getGeneration()) {
+        || inv.getGeneration() != a.room().getGeneration()
+        || !clock.instant().isBefore(inv.getExpiresAt())) {
       throw ApiException.conflict("INVITATION_NOT_ACCEPTED", "Invitation is not awaiting keys");
     }
     Device device =

@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { ChatClient, type Displayed } from "./client";
 import { FingerprintChangedError } from "./mls";
 import { validateAccount } from "./bytes";
-import type { Room, Invite, Member, Device } from "./types";
+import type { Room, Invite, Device } from "./types";
 let theme: Theme = readTheme(localStorage);
 function applyTheme() {
   document.documentElement.dataset.theme = theme;
@@ -174,6 +174,18 @@ function login() {
     });
   };
 }
+async function signOut() {
+  let confirmed = true;
+  try {
+    await client.logout();
+  } catch {
+    confirmed = false;
+  }
+  selected = null;
+  login();
+  if (!confirmed)
+    status("Signed out on this device. The server did not confirm sign-out.");
+}
 async function signedIn() {
   const t = client.api.tokens!;
   if (
@@ -190,28 +202,38 @@ async function signedIn() {
       if (client.api.tokens?.deviceStatus === "APPROVED") await signedIn();
       else status("Still awaiting approval from an existing trusted device.");
     });
-    bind("logout", async () => {
-      await client.logout();
-      login();
-    });
+    bind("logout", signOut);
     return;
   }
-  app.innerHTML = `<div class="shell"><header class="app-header">${brand}<div class="header-actions"><span><i class="online"></i>${h(t.username)}</span><button id="reconnect">Reconnect</button><button id="account">Account &amp; session</button><button id="devices">Devices</button><button id="logout">Sign out</button></div></header><div><div id="app-status" class="global-status" role="alert"></div><div class="workspace"><aside class="sidebar"><div class="section-head"><h3>Your rooms</h3><button id="refresh" aria-label="Refresh rooms">↻</button></div><div id="rooms" class="room-list"></div><button id="new-room" class="primary">+ Create group</button><button id="join-room">Join group</button><h3>Invitations</h3><div id="invitations"><small>No pending invitations.</small></div></aside><section id="chat" class="chat"></section><aside id="details" class="details"></aside></div></div></div>`;
+  app.innerHTML = `<div class="shell"><header class="app-header">${brand}<div class="header-actions"><button id="reconnect">Reconnect</button><details class="account-menu"><summary>${h(t.username)}</summary><div class="account-options"><button id="account">Account &amp; session</button><button id="devices">Devices</button><button id="logout">Sign out</button></div></details></div></header><div><div id="app-status" class="global-status" role="alert"></div><div class="workspace"><aside class="sidebar"><div class="section-head"><h3>Your rooms</h3><button id="refresh" aria-label="Refresh rooms">↻</button></div><div id="rooms" class="room-list"></div><button id="new-room" class="primary">+ Create group</button><button id="join-room">Join group</button><h3>Invitations</h3><div id="invitations"><small>No pending invitations.</small></div></aside><section id="chat" class="chat"></section><aside id="details" class="details"></aside></div></div></div>`;
   bind("refresh", refreshLists);
   bind("new-room", async () => newRoom());
-  bind("devices", devices);
-  bind("account", account);
+  const menu = app.querySelector<HTMLDetailsElement>(".account-menu")!;
+  menu.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && menu.open) {
+      menu.open = false;
+      menu.querySelector("summary")?.focus();
+    }
+  });
+  bind("devices", async () => {
+    menu.open = false;
+    await devices();
+  });
+  bind("account", async () => {
+    menu.open = false;
+    await account();
+  });
   bind("join-room", joinGroup);
   bind("reconnect", async () => {
     await client.api.refresh();
     await client.connect();
+    if (selected && !client.sessionId) {
+      await choose(selected);
+      return;
+    }
     status("Connected.");
   });
-  bind("logout", async () => {
-    await client.logout();
-    selected = null;
-    login();
-  });
+  bind("logout", signOut);
   renderChat();
   await refreshLists();
 }
@@ -328,6 +350,8 @@ function renderChat() {
 function renderMessages() {
   const box = document.querySelector("#messages");
   if (!box) return;
+  const previousTop = box.scrollTop;
+  const atBottom = box.scrollHeight - box.clientHeight - previousTop <= 24;
   box.innerHTML = "";
   if (document.visibilityState !== "visible") return;
   const now = Date.now();
@@ -346,7 +370,7 @@ function renderMessages() {
     item.append(bubble, info);
     box.append(item);
   }
-  box.scrollTop = box.scrollHeight;
+  box.scrollTop = atBottom ? box.scrollHeight : previousTop;
   const timer = document.querySelector("#room-timer");
   if (timer && selected)
     timer.textContent = `Resets in ${Math.max(0, Math.ceil((Date.parse(selected.nextResetAt) - now) / 60000))} min · ${selected.messageTtlSeconds}s message lifetime`;
@@ -384,11 +408,22 @@ async function renderDetails() {
     return;
   }
   const room = selected;
-  const members = await client.members(room.id).catch(() => [] as Member[]);
+  const members = await client.members(room.id).catch(() => null);
   if (selected?.id !== room.id) return;
-  box.innerHTML = `<section><div class="tag">Room details</div><h3>Members</h3><div id="members"></div>${room.myRole === "OWNER" ? `<p>Group code: ${h(room.displayCode)}</p><p>Your public device fingerprint</p><div class="fingerprint">${h(room.ownerDeviceFingerprint)}</div>` : ""}</section><section id="owner-tools"></section><section><h3>Before you leave</h3><p>Leaving clears the messages shown in this session. Viewed messages cannot be retrieved in a new session.</p></section>`;
+  const expanded = box.querySelector<HTMLDetailsElement>(".member-disclosure");
+  const keepOpen = expanded?.dataset.roomId === room.id && expanded.open;
+  const activeMembers = (members ?? [])
+    .filter((member) => member.state === "ACTIVE")
+    .sort(
+      (a, b) =>
+        Number(b.role === "OWNER") - Number(a.role === "OWNER") ||
+        a.username.localeCompare(b.username),
+    );
+  box.innerHTML = `<section><div class="tag">Room details</div><details class="member-disclosure" data-room-id="${h(room.id)}" ${keepOpen ? "open" : ""}><summary>Members${members ? ` (${activeMembers.length})` : ""}</summary><div id="members"></div></details>${room.myRole === "OWNER" ? `<p>Group code: ${h(room.displayCode)}</p><p>Your public device fingerprint</p><div class="fingerprint">${h(room.ownerDeviceFingerprint)}</div>` : ""}</section><section id="owner-tools"></section><section><h3>Before you leave</h3><p>Leaving clears the messages shown in this session. Viewed messages cannot be retrieved in a new session.</p></section>`;
   const list = box.querySelector("#members")!;
-  for (const m of members.filter((m) => m.state === "ACTIVE")) {
+  if (!members)
+    list.textContent = "Could not load members. Use Refresh to try again.";
+  for (const m of activeMembers) {
     const row = document.createElement("div");
     row.className = "member";
     row.innerHTML = `<strong>${h(m.username)} ${room.myRole === "OWNER" && m.role === "OWNER" ? "· owner" : ""}</strong>${room.myRole === "OWNER" ? `<span class="fingerprint">${h(m.deviceFingerprint)}</span>` : ""}`;
@@ -431,7 +466,31 @@ async function renderDetails() {
       ),
     );
     bind("add-members", async () => {
-      await addAcceptedMembers(room);
+      const invites = (
+        await client.api.call<Invite[]>(`/api/v1/rooms/${room.id}/invites`)
+      )
+        .filter((invite) => invite.status === "ACCEPTED")
+        .sort((a, b) => a.inviteeUsername.localeCompare(b.inviteeUsername));
+      if (!invites.length) {
+        status("No accepted invitations are waiting.");
+        return;
+      }
+      formDialog(
+        "Accepted invitations",
+        invites
+          .map(
+            (invite) =>
+              `<label class="invite-choice"><input type="checkbox" name="invite" value="${h(invite.id)}" checked> ${h(invite.inviteeUsername)}</label>`,
+          )
+          .join(""),
+        async (data) => {
+          const ids = data.getAll("invite").map(String);
+          if (!ids.length)
+            throw new Error("Select at least one member to add.");
+          await addAcceptedMembers(room, ids);
+        },
+        "Add selected members",
+      );
     });
     bind("reset", async () =>
       formDialog(
@@ -449,9 +508,9 @@ async function renderDetails() {
     );
   }
 }
-async function addAcceptedMembers(room: Room) {
+async function addAcceptedMembers(room: Room, ids: string[]) {
   try {
-    await client.addAccepted(room);
+    await client.addAccepted(room, ids);
     await refreshLists();
     status("Accepted members added. They can now select the group to enter.");
   } catch (error) {
@@ -491,7 +550,7 @@ async function addAcceptedMembers(room: Room) {
           error.previous,
           error.current,
         );
-        await addAcceptedMembers(room);
+        await addAcceptedMembers(room, ids);
       },
       "Trust verified device & add member",
     );
@@ -684,10 +743,7 @@ async function authenticator(state?: MfaState) {
   const setup = t.deviceStatus === "MFA_SETUP";
   if (t.deviceStatus === "MFA_SETUP_APPROVAL") {
     app.innerHTML = `<main class="landing"><header>${brand}</header><section class="pending-wrap"><h2>Set up your authenticator on your original device.</h2><p>This account was created before authenticator setup. Sign in on the original approved browser or app first to secure it. Then sign in here with your authenticator code.</p><p id="auth-status" class="status"></p><button id="logout">Sign out</button></section></main>`;
-    bind("logout", async () => {
-      await client.logout();
-      login();
-    });
+    bind("logout", signOut);
     return;
   }
   if (!state && t.deviceStatus === "SESSION_CONFLICT")
@@ -711,17 +767,11 @@ async function authenticator(state?: MfaState) {
       await client.api.call("/api/v1/auth/mfa/replace-session", "POST");
       await finishAuthentication();
     });
-    bind("logout", async () => {
-      await client.logout();
-      login();
-    });
+    bind("logout", signOut);
     return;
   }
   app.innerHTML = `<main class="landing"><header>${brand}</header><section class="pending-wrap"><div class="tag">${setup ? "Secure your account" : "Second verification"}</div><h2>${setup ? "Set up Google Authenticator." : "Enter your authenticator code."}</h2><p>${setup ? "In Google Authenticator, tap + and scan this QR code, or enter the setup key below." : "Open your authenticator app and enter the current 6-digit code. You can also use an unused recovery code."}</p>${setup ? '<canvas id="auth-qr" aria-label="Authenticator setup QR code"></canvas><section class="setup-key" aria-labelledby="setup-key-title"><h3 id="setup-key-title">Setup key</h3><p>In Google Authenticator, choose <strong>Enter a setup key</strong> and type this code.</p><code id="setup-secret" class="setup-secret"></code><button id="copy-setup-secret" type="button">Copy setup key</button><small>Keep this key private. Anyone with it can generate your authenticator codes.</small></section>' : ""}<form id="mfa-form"><label>${setup ? "6-digit code" : "Authenticator or recovery code"}<input id="mfa-code" autocomplete="one-time-code" ${setup ? 'inputmode="numeric" pattern="[0-9]{6}" maxlength="6"' : 'maxlength="64"'} required></label><p id="auth-status" class="status" role="alert"></p><div class="inline-actions"><button id="verify-mfa" class="primary" type="submit">Verify &amp; continue</button><button id="logout" type="button">Sign out</button></div></form></section></main>`;
-  bind("logout", async () => {
-    await client.logout();
-    login();
-  });
+  bind("logout", signOut);
   const submit = document.querySelector<HTMLButtonElement>("#verify-mfa")!;
   if (setup) {
     submit.disabled = true;
@@ -769,7 +819,7 @@ async function account() {
   const t = client.api.tokens!;
   formDialog(
     "Account & session",
-    `<p><strong>Username:</strong> ${h(t.username)}</p><p><strong>User ID:</strong> ${h(t.userId)}</p><p><strong>Current device ID:</strong> ${h(t.deviceId)}</p><p>Authenticator verification is required at every new sign-in. One session is active at a time. Devices can be reviewed from the Devices button in the header.</p>`,
+    `<p><strong>Username:</strong> ${h(t.username)}</p><p><strong>User ID:</strong> ${h(t.userId)}</p><p><strong>Current device ID:</strong> ${h(t.deviceId)}</p><p>Authenticator verification is required at every new sign-in. One session is active at a time. Open your username menu to review Devices.</p>`,
     async () => {},
     "Done",
   );

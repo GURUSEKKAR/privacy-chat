@@ -24,15 +24,15 @@ class AdversarialLifecycleTest extends IntegrationTestBase {
     var room = createRoom(owner, 600, 3600, null);
     var members = new java.util.ArrayList<TestUser>();
     var invites = new java.util.ArrayList<InvitationView>();
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 30; i++) {
       var member = register("seat");
       members.add(member);
       invites.add(invitations.invite(owner.principal(), room.id(), member.username()));
     }
-    for (int i = 0; i < 15; i++)
+    for (int i = 0; i < 29; i++)
       invitations.accept(members.get(i).principal(), invites.get(i).id(), null);
     assertThatThrownBy(
-            () -> invitations.accept(members.get(15).principal(), invites.get(15).id(), null))
+            () -> invitations.accept(members.get(29).principal(), invites.get(29).id(), null))
         .isInstanceOf(ApiException.class)
         .hasMessageContaining("limit");
     assertThat(
@@ -40,7 +40,13 @@ class AdversarialLifecycleTest extends IntegrationTestBase {
                 "select count(*) from memberships where room_id=? and state in ('ACTIVE','PENDING_KEYS')",
                 Long.class,
                 room.id()))
-        .isEqualTo(16);
+        .isEqualTo(30);
+    jdbc.update("update invitations set expires_at = created_at where id = ?", invites.get(0).id());
+    assertThat(invitations.forRoom(owner.principal(), room.id()))
+        .extracting(InvitationView::id)
+        .doesNotContain(invites.get(0).id());
+    assertThat(invitations.accept(members.get(29).principal(), invites.get(29).id(), null).status())
+        .isEqualTo("ACCEPTED");
   }
 
   @Autowired ResetService resets;

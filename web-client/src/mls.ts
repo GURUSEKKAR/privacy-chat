@@ -32,7 +32,15 @@ import { toLeafIndex } from "ts-mls/treemath.js";
 import { getCredentialFromLeafIndex } from "ts-mls/ratchetTree.js";
 import { b64, unb64, utf8, text, fingerprint } from "./bytes";
 import type { Identity } from "./vault";
-import type { Member } from "./types";
+import type { Member, RosterFingerprints } from "./types";
+
+export function activeFingerprints(members: Member[]): RosterFingerprints {
+  return Object.fromEntries(
+    members
+      .filter((member) => member.state === "ACTIVE")
+      .map((member) => [member.userId, member.deviceFingerprint]),
+  );
+}
 export const suiteReady = getCiphersuiteImpl(
   getCiphersuiteFromName("MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519"),
 );
@@ -67,10 +75,31 @@ export class Mls {
         maximumForwardRatchetSteps: 200,
       },
       authService: {
-        validateCredential: async (credential, key) =>
-          credential.credentialType === "basic" &&
-          this.pins.get(text.decode(credential.identity)) ===
-            (await fingerprint(key)),
+        validateCredential: (credential, key) =>
+          this.validateCredential(credential, key),
+      },
+    };
+  }
+  private async validateCredential(
+    credential: Parameters<
+      ClientConfig["authService"]["validateCredential"]
+    >[0],
+    key: Uint8Array,
+    roster?: RosterFingerprints,
+  ) {
+    if (credential.credentialType !== "basic") return false;
+    const user = text.decode(credential.identity);
+    return (this.pins.get(user) ?? roster?.[user]) === (await fingerprint(key));
+  }
+  private withRoster(
+    config: ClientConfig,
+    roster: RosterFingerprints,
+  ): ClientConfig {
+    return {
+      ...config,
+      authService: {
+        validateCredential: (credential, key) =>
+          this.validateCredential(credential, key, roster),
       },
     };
   }
@@ -151,9 +180,12 @@ export class Mls {
       ),
     );
   }
-  async join(room: string, encoded: string, members: Member[]) {
-    for (const m of members.filter((m) => m.state === "ACTIVE"))
-      await this.pin(m.userId, m.deviceFingerprint);
+  async join(
+    room: string,
+    encoded: string,
+    roster: RosterFingerprints,
+    epoch: number,
+  ) {
     const bytes = unb64(encoded);
     const decoded = decodeWelcome(bytes, 0);
     if (!decoded || decoded[1] !== bytes.length)
@@ -171,9 +203,12 @@ export class Mls {
         cs,
         undefined,
         undefined,
-        this.config,
+        this.withRoster(this.config, roster),
       );
-      this.groups.set(room, state);
+      if (Number(state.groupContext.epoch) !== epoch)
+        throw new Error("Welcome has an unexpected MLS epoch");
+      await this.verifyRoster(state, roster);
+      this.groups.set(room, { ...state, clientConfig: this.config });
       this.pending.delete(key);
       p.privatePackage.initPrivateKey.fill(0);
       return;
@@ -194,29 +229,32 @@ export class Mls {
     return Number(this.require(room).groupContext.epoch);
   }
   async verify(room: string, members: Member[]) {
-    const state = this.require(room);
+    await this.verifyRoster(this.require(room), activeFingerprints(members));
+  }
+  private async verifyRoster(state: ClientState, roster: RosterFingerprints) {
     const leaves = state.ratchetTree
       .filter((n) => n?.nodeType === "leaf")
       .map((n) => (n!.nodeType === "leaf" ? n!.leaf : null))
       .filter((n) => n !== null);
-    const active = members.filter((m) => m.state === "ACTIVE");
-    if (leaves.length !== active.length)
+    if (leaves.length !== Object.keys(roster).length)
       throw new Error("MLS roster does not match active room membership.");
-    const found = new Set<string>();
+    const found = new Map<string, string>();
     for (const leaf of leaves) {
       if (leaf.credential.credentialType !== "basic")
         throw new Error("Unsupported MLS credential");
       const user = text.decode(leaf.credential.identity);
       if (found.has(user)) throw new Error("Duplicate MLS member");
-      found.add(user);
-      const member = active.find((m) => m.userId === user);
       const fp = await fingerprint(leaf.signaturePublicKey);
-      if (!member || member.deviceFingerprint !== fp)
+      if (roster[user] !== fp)
         throw new Error(
           "MLS device fingerprint does not match the enrolled device.",
         );
-      await this.pin(user, fp);
+      const pinned = this.pins.get(user);
+      if (pinned !== undefined && pinned !== fp)
+        throw new FingerprintChangedError(user, pinned, fp);
+      found.set(user, fp);
     }
+    for (const [user, fp] of found) await this.pin(user, fp);
   }
   async prepareAdd(
     room: string,
@@ -297,7 +335,12 @@ export class Mls {
       },
     };
   }
-  async commit(room: string, encoded: string, expected: number) {
+  async commit(
+    room: string,
+    encoded: string,
+    expected: number,
+    roster?: RosterFingerprints,
+  ) {
     const bytes = unb64(encoded);
     const decoded = decodeMlsMessage(bytes, 0);
     if (
@@ -310,9 +353,15 @@ export class Mls {
       throw new Error("Invalid MLS commit");
     if (this.epoch(room) + 1 !== expected)
       throw new Error("Unexpected MLS epoch");
+    const state = this.require(room);
     const result = await processMessage(
       decoded[0] as Parameters<typeof processMessage>[0],
-      this.require(room),
+      roster
+        ? {
+            ...state,
+            clientConfig: this.withRoster(state.clientConfig, roster),
+          }
+        : state,
       emptyPskIndex,
       acceptAll,
       await suiteReady,
@@ -322,7 +371,12 @@ export class Mls {
       Number(result.newState.groupContext.epoch) !== expected
     )
       throw new Error("Commit did not advance the epoch");
-    this.groups.set(room, result.newState);
+    if (this.groups.get(room) !== state)
+      throw new Error("Room keys changed while processing a commit");
+    this.groups.set(room, {
+      ...result.newState,
+      clientConfig: state.clientConfig,
+    });
     result.consumed.forEach(zeroOutUint8Array);
   }
   async encrypt(room: string, generation: number, value: string) {

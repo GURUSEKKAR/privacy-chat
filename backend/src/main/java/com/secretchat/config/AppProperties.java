@@ -14,10 +14,10 @@ public record AppProperties(
     @DefaultValue("7d") Duration keyPackageTtl,
     @DefaultValue("5") int loginFailuresPerWindow,
     @DefaultValue("5m") Duration loginWindow,
-    @DefaultValue("20") int registrationsPerWindow,
+    @DefaultValue("40") int registrationsPerWindow,
     @DefaultValue("30") int sendsPerWindow,
     @DefaultValue("10s") Duration sendWindow,
-    @DefaultValue("16") int maxRoomMembers,
+    @DefaultValue("30") int maxRoomMembers,
     @DefaultValue("0s") Duration deletedMetadataRetention,
     @DefaultValue("100") int workerBatchSize,
     @DefaultValue("50000") int maxPendingChallenges) {}
