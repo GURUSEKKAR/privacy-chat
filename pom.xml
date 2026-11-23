@@ -31,7 +31,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- Bouncy Castle 1.86+ is required (CVE-2026-17507 affects earlier MLS releases). -->
     <bouncycastle.version>1.87</bouncycastle.version>
-    <javafx.version>21.0.13</javafx.version>
+    <javafx.version>27.0.1.1</javafx.version>
     <javafx-maven-plugin.version>0.0.8</javafx-maven-plugin.version>
     <spotless.version>3.11.0</spotless.version>
   </properties>
